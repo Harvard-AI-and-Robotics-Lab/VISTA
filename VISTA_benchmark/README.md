@@ -119,68 +119,59 @@ reserving GPUs and dying later.
 
 ## Environment setup
 
-Model families require separate environments because their stacks differ:
+Use Python 3.12 and install only the environment your model needs. Keep the pinned
+stacks separate; local models require CUDA, while API models do not need a GPU.
 
-| Environment | Stack | Why it must be separate |
+| Models | Environment | Requirements |
 |---|---|---|
-| `venv_qwen` | vllm 0.25.1, torch 2.11.0+cu130, transformers 5.13.1 | vLLM hard-pins one exact torch build |
-| `venv_internvl3` | torch 2.9.1+cu128, transformers 4.57.6 | InternVL3 sizes using the newer remote-code stack |
-| `venv_videollama` | torch 2.9.1+cu128, transformers **4.49.0** | two models' vendored code predates transformers 4.50 |
-| `venv_llava` | Compatible LLaVA-NeXT installation | LLaVA-Video uses its own model builder |
+| Qwen3-VL, Gemma 3, Gemini, GPT Realtime Mini | `venv_qwen` | [requirements_qwen.txt](requirements/requirements_qwen.txt) |
+| InternVL3 1B / 2B / 8B / 14B | `venv_internvl3` | [requirements_internvl3.txt](requirements/requirements_internvl3.txt) |
+| InternVL3 9B | `venv_internvl3_9b` | [requirements_internvl3_9b.txt](requirements/requirements_internvl3_9b.txt) |
+| VideoLLaMA3 | `venv_videollama` | [requirements_videollama.txt](requirements/requirements_videollama.txt) |
+| LLaVA-Video | `venv_llava` | See below |
+
+From the repository root, select an environment and requirements file from the
+table, then install them (Qwen example):
 
 ```bash
-mkdir -p venvs
-
-python3.12 -m venv venvs/venv_qwen
-venvs/venv_qwen/bin/pip install -U pip setuptools wheel
-venvs/venv_qwen/bin/pip install -r requirements/requirements_qwen.txt
-
-python3.12 -m venv venvs/venv_internvl3
-venvs/venv_internvl3/bin/pip install -U pip setuptools wheel
-venvs/venv_internvl3/bin/pip install -r requirements/requirements_internvl3.txt
-venvs/venv_internvl3/bin/pip install httpx
-
-python3.12 -m venv venvs/venv_videollama
-venvs/venv_videollama/bin/pip install -U pip setuptools wheel
-venvs/venv_videollama/bin/pip install -r requirements/requirements_videollama.txt
-venvs/venv_videollama/bin/pip install httpx
-
-# internvl3_9b needs the same transformers 4.49 stack as VideoLLaMA3, so point its name
-# at that environment rather than building a fourth copy.
-ln -s venv_videollama venvs/venv_internvl3_9b
+cd VISTA_benchmark
+VISTA_ENV=venv_qwen
+VISTA_REQUIREMENTS=requirements/requirements_qwen.txt
+python3.12 -m venv "venvs/$VISTA_ENV"
+"venvs/$VISTA_ENV/bin/python" -m pip install -U pip setuptools wheel
+"venvs/$VISTA_ENV/bin/python" -m pip install -r "$VISTA_REQUIREMENTS" httpx
 ```
 
-`venvs/` may contain symlinks, so several names can point at one real environment.
-Install `google-genai` in `venv_qwen` when running Gemini; the Qwen requirement file
-does not include that SDK. GPT Realtime Mini uses the WebSocket dependency already
-listed in that environment's requirements.
-
-Standalone evaluation runs video decoding on the CPU and calls the hosted judge.
-Install its own `requirements.txt`; it does not require a local judge model,
-FlashAttention, or an inference GPU environment.
+- **InternVL3 9B:** its requirements use Transformers 4.49.0, matching VideoLLaMA3.
+  If VideoLLaMA3 is already installed, reuse it with
+  `ln -s venv_videollama venvs/venv_internvl3_9b`.
+- **Gemini:** also run `venvs/venv_qwen/bin/python -m pip install google-genai`.
+  GPT Realtime Mini's WebSocket dependency is already included.
+- **Evaluation:** install [VISTA_eval/requirements.txt](../VISTA_eval/requirements.txt)
+  separately; it uses the hosted judge and CPU video decoding.
 
 ### `llava_video`
 
-Use a separate `venv_llava` environment with a compatible installation of
-[LLaVA-NeXT](https://github.com/LLaVA-VL/LLaVA-NeXT), which provides
-`llava.model.builder.load_pretrained_model`. Follow that project's installation
-instructions for the LLaVA-Video checkpoint instead of installing it into the
-Qwen or InternVL environment. The former vendored fine-tuning package has been
-removed from this repository and is no longer an installation source.
+Create `venvs/venv_llava` with Python 3.12 and install a compatible
+[LLaVA-NeXT](https://github.com/LLaVA-VL/LLaVA-NeXT) version using its LLaVA-Video
+instructions. Add the shared runner dependencies:
 
-The LLaVA environment also needs the runner's shared imports: `httpx`,
-`opencv-python-headless`, `pandas`, `Pillow`, `requests`, and `tqdm`.
+```bash
+venvs/venv_llava/bin/python -m pip install httpx opencv-python-headless pandas Pillow requests tqdm
+```
 
-### Optional cache locations
+<details>
+<summary>Optional cache locations</summary>
 
-On machines with limited space in the default cache directories, create alternate
-directories and configure library caches in the exported environment:
+Create these directories and export their paths if you need a different cache location:
 
 ```bash
 export HF_HOME=/path/to/cache/huggingface
 export PIP_CACHE_DIR=/path/to/cache/pip
 export TMPDIR=/path/to/cache/tmp
 ```
+
+</details>
 
 ---
 
