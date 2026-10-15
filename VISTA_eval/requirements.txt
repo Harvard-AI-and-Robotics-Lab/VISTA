@@ -1,0 +1,5 @@
+requests
+pandas
+opencv-python-headless
+Pillow
+tqdm

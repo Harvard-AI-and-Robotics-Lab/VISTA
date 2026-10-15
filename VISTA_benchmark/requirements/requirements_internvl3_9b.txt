@@ -1,0 +1,17 @@
+# Environment for the internvl3_9b model key only.
+#
+# InternVL3-9B is the odd one out of the InternVL3 family: it is built on an InternLM2
+# language model instead of Qwen2, and its bundled modeling_internlm2.py assumes
+# PreTrainedModel provides .generate(). transformers 4.50 moved generation into
+# GenerationMixin, which that vendored code does not inherit, so on transformers 4.57 the
+# model loads and then fails at inference with:
+#
+#     AttributeError: 'InternLM2ForCausalLM' object has no attribute 'generate'
+#
+# Every other InternVL3 size (1B / 2B / 8B / 14B) works on requirements_internvl3.txt.
+#
+# The pin set it needs is identical to the VideoLLaMA3 one (transformers 4.49.0), so the
+# two share an environment on this server: envs/venv_internvl3_9b is a symlink to the same
+# prefix as envs/venv_videollama.
+
+-r requirements_videollama.txt

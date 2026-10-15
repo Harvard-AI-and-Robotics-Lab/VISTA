@@ -1,0 +1,6 @@
+# Optional text-metric evaluation, separate from inference environments.
+-r ../requirements.txt
+sacrebleu
+rouge-score
+sentence-transformers
+bert-score

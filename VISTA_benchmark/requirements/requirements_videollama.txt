@@ -1,0 +1,55 @@
+# Environment for models whose bundled remote code predates transformers 4.50.
+#
+# Used by TWO model keys:
+#   llama3_video   (DAMO-NLP-SG/VideoLLaMA3-7B)
+#   internvl3_9b   (OpenGVLab/InternVL3-9B)  -- see requirements_internvl3_9b.txt
+#
+# WHY transformers==4.49.0 and not the 4.57 of requirements_internvl3.txt:
+#
+#   * VideoLLaMA3's processing_videollama3.py does
+#         from transformers.image_utils import VideoInput
+#     and VideoInput moved to transformers.video_utils in 4.5x. Loading it on 4.57 fails
+#     with ImportError: cannot import name 'VideoInput' from 'transformers.image_utils'.
+#
+#   * InternVL3-9B is the one InternVL3 size built on an InternLM2 language model rather
+#         than Qwen2. Its bundled modeling_internlm2.py assumes PreTrainedModel provides
+#         .generate(), but transformers 4.50 split generation out into GenerationMixin,
+#         which that vendored code does not inherit. On 4.57 the model loads fine and then
+#         dies at inference with
+#             AttributeError: 'InternLM2ForCausalLM' object has no attribute 'generate'
+#         Note this surfaces per-clip inside run.py's try/except, so the process still
+#         exits 0 with an empty predictions file -- always check the line count.
+#
+# 4.49.0 is the last release where both hold. Verified working on this server 2026-09-09
+# with Python 3.12.13, CUDA driver 13.0, NVIDIA RTX 6000 Ada (sm_89).
+#
+# --- core ---
+torch==2.9.1
+torchvision==0.24.1
+torchaudio==2.9.1
+transformers==4.49.0
+tokenizers==0.21.4
+accelerate==1.13.0
+safetensors==0.8.0
+huggingface_hub==0.36.2
+
+# --- remote code (trust_remote_code=True) needs these ---
+timm==1.0.27
+einops==0.8.2
+sentencepiece==0.2.1
+
+# --- VideoLLaMA3's remote code imports these by name at load time ---
+decord==0.6.0
+imageio==2.37.4
+ffmpeg==1.4
+
+# --- video / image IO ---
+opencv-python-headless==5.0.0.93
+av==18.1.0
+pillow==12.2.0
+
+# --- misc ---
+numpy==2.4.6
+pandas==2.3.3
+tqdm
+requests

@@ -1,0 +1,9 @@
+# Preserve executable scripts and byte-verified research artifacts on all hosts.
+*.py text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+*.json text eol=lf
+# Unified diffs use a single space for empty context lines.
+*.patch text eol=lf whitespace=-blank-at-eol
+.env.example text eol=lf
+.gitattributes text eol=lf

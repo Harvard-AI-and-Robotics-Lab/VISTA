@@ -1,0 +1,14 @@
+# Shared runner and hosted-model dependencies. For local models, install one
+# requirements/requirements_<family>.txt instead of combining model stacks.
+numpy
+pandas
+opencv-python-headless
+Pillow
+requests
+tqdm
+python-dotenv
+httpx>=0.28,<2
+google-genai>=1,<2
+websockets>=15,<17
+# models.py imports PyTorch even for hosted models.
+torch

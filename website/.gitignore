@@ -1,0 +1,12 @@
+# Windows
+Thumbs.db
+desktop.ini
+
+# OS X
+.DS_Store
+.Spotlight-V100
+.Trashes
+._*
+
+# Intermediate montage renders; builders recreate these locally.
+videos/montage_assets/

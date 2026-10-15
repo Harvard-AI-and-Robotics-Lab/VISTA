@@ -1,0 +1,33 @@
+# Environment for InternVL3 1B / 2B / 8B / 14B inference.
+# InternVL3 9B and VideoLLaMA3 use the separate transformers 4.49 stack.
+# Standalone hosted evaluation has its own requirements.txt and needs no GPU.
+#
+# Verified working on this server 2026-09-08 with Python 3.12.13, CUDA driver 13.0,
+# NVIDIA RTX 6000 Ada (sm_89).
+#
+# --- core ---
+torch==2.9.1
+torchvision==0.24.1
+torchaudio==2.9.1
+transformers==4.57.6
+tokenizers==0.22.2
+accelerate==1.13.0
+safetensors==0.8.0
+huggingface_hub==0.36.2
+
+# --- InternVL3 remote code (trust_remote_code=True) needs these ---
+timm==1.0.27
+einops==0.8.2
+sentencepiece==0.2.1
+
+# --- video / image IO ---
+opencv-python-headless==5.0.0.93
+av==18.1.0
+pillow==12.2.0
+
+# --- misc ---
+numpy==2.4.6
+pandas==2.3.3
+tqdm==4.68.3
+requests==2.34.2
+protobuf==7.35.1

@@ -1,0 +1,28 @@
+# Generated EgoBlind results; keep source and dependency files visible to Git.
+EgoBlind/EGOB_benchmark/outputs/
+EgoBlind/EGOB_benchmark/logs/
+EGOB_fine_tune/
+
+VISTA_fine_tune/internvl/output/
+VISTA_fine_tune/qwen/qwen-vl-finetune/wandb/
+VISTA_fine_tune/qwen/qwen-vl-finetune/scripts/wandb/
+VISTA_fine_tune/llava_video/llava.egg-info/
+VISTA_benchmark/logs_*.out
+
+# Local per-user config and secrets. .env.example is the tracked template.
+.env
+
+# Python environments, wherever someone puts them.
+venvs/
+envs/
+venv_*/
+
+**/__pycache__/
+**/*.pyc
+*.pt
+*.safetensors
+*.bin
+
+# Generated benchmark outputs and queue state
+VISTA_benchmark/outputs/
+VISTA_benchmark/logs/

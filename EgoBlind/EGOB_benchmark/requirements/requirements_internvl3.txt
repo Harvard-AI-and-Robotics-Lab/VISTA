@@ -1,0 +1,3 @@
+# InternVL3 and Gemma 3's Transformers stack, shared with the VISTA benchmark.
+-r ../requirements.txt
+-r ../../../VISTA_benchmark/requirements/requirements_internvl3.txt

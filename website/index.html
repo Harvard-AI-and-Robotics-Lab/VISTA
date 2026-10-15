@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VISTA: A Multimodal Egocentric Benchmark for Goal-Oriented Perception and Assistance to Blind and Low-Vision Users</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+    <link rel="stylesheet" href="./static/css/bulma.min.css">
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="./static/css/index.css">
+
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+    <link rel="stylesheet" href="static/css/examples.css">
+    <script src="static/js/examples.js" defer></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+
+<body>
+
+
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-1 publication-title">VISTA: A Multimodal Egocentric Benchmark<br>for Goal-Oriented Perception and Assistance<br>to Blind and Low-Vision Users</h1>
+
+                        <div class="is-size-5 publication-authors">
+                            <div class="vista-authors">
+                                <span>Noé Mosca<sup>1,2,*</sup></span>
+                                <span>Mohamed Rayan Barhdadi<sup>3,*</sup></span>
+                                <span>Muhammad Hamza<sup>4,*</sup></span>
+                                <span>Joshua Yeh<sup>1,*</sup></span>
+                                <span>Suryodaya Bikram Shahi<sup>1,*</sup></span>
+                                <span>Zhiyan Li<sup>1</sup></span>
+                                <span>Selim-Antoine Lali<sup>1</sup></span>
+                                <span>Weiyue Li<sup>1</sup></span>
+                                <span>Hasan Kurban<sup>5</sup></span>
+                                <span>Erchin Serpedin<sup>3</sup></span>
+                                <span>Gang Luo<sup>1</sup></span>
+                                <span>Yue Zhang<sup>1,†</sup></span>
+                                <span>Minghan Li<sup>1,†</sup></span>
+                                <span>Mengyu Wang<sup>1,†</sup></span>
+                            </div>
+                            <div class="vista-affiliations">
+                                <span><sup>1</sup>Harvard AI and Robotics Lab, Harvard University</span>
+                                <span><sup>2</sup>Télécom Paris, Institut Polytechnique de Paris</span>
+                                <span><sup>3</sup>Texas A&amp;M University</span>
+                                <span><sup>4</sup>University of Toronto</span>
+                                <span><sup>5</sup>Hamad Bin Khalifa University</span>
+                            </div>
+                            <p class="vista-author-notes"><sup>*</sup>Contributed equally as co-first authors. &nbsp; <sup>†</sup>Contributed equally as co-senior authors.</p>
+                        </div>
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+
+                                <span class="link-block">
+                                    <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <span><b>PDF</b></span>
+                                    </a>
+                                    <a target="_blank" rel="noopener noreferrer" href="https://huggingface.co/datasets/harvardairobotics/VISTA"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-database"></i>
+                                        </span>
+                                        <span><b>Dataset (Hugging Face)</b></span>
+                                    </a>
+                                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/Harvard-AI-and-Robotics-Lab/VISTA"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fab fa-github"></i>
+                                        </span>
+                                        <span><b>Code</b></span>
+                                    </a>
+                                </span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<section class="section" id="vista-overview">
+    <div class="container overview-container">
+        <div class="overview-layout">
+            <div class="overview-video">
+                <video poster="videos/vista_tc01_tc10_montage.jpg?v=tc07-large-slam" aria-label="VISTA task categories followed by TC07 modalities and annotations" controls muted loop playsinline>
+                    <source src="videos/vista_tc01_tc10_montage.mp4?v=tc07-large-slam" type="video/mp4">
+                </video>
+            </div>
+            <div class="overview-abstract">
+                <h2 class="title is-3">Abstract</h2>
+                <p>Blindness and low vision limit many people’s ability to complete daily tasks, motivating AI assistants that provide useful guidance. Yet, existing benchmarks do not adequately test whether vision models can provide effective everyday assistance. In particular, i) existing benchmarks primarily rely on visual and textual inputs, with limited support for other modalities that are increasingly available in egocentric wearable devices such as gaze, inertial measurements, spatial trajectories, and others; and ii) existing evaluations emphasize scene understanding and question answering, with limited coverage of goal-conditioned guidance for blind and low-vision users across everyday tasks. To bridge this gap, we introduce <b>VISTA</b> (Visually Impaired Scene and Task Annotations), a multimodal egocentric benchmark for goal-oriented assistance for blind and low-vision users. <b>VISTA</b> contains ∼1,000 egocentric recordings captured with Project Aria glasses; each recording provides synchronized sensor streams, six of which serve as model inputs, and three different types of annotation, covering ten task categories (TC), from object localization to hazard detection. We evaluate 14 representative vision-language models zero-shot on VISTA and design a lightweight multimodal model baseline that integrates all six modalities. Experimental results show that, although existing models can often describe egocentric scenes, they remain limited in generating goal-directed assistive guidance. <b>VISTA</b> thus provides a benchmark for evaluating multimodal models that could improve everyday accessibility.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container is-max-desktop">
+        <div class="sensor-intro">
+            <img src="figures/modalities_figure_r.png" alt="Aria RGB, stereo SLAM and eye cameras, audio, IMU and environmental sensors">
+            <p><strong>Sensor modalities of the Aria glasses.</strong> VISTA records synchronized RGB video, stereo SLAM and eye-tracking cameras, audio, IMU, barometer, and magnetometer.</p>
+        </div>
+    </div>
+</section>
+<section class="section" id="vista-analysis">
+    <div class="container is-max-widescreen">
+        <h2 class="title is-2">Explore the VISTA Dataset</h2>
+        <p class="examples-intro">VISTA contains 997 egocentric clips across ten task categories, split into 497 training, 50 validation, and 450 test clips. Each clip includes scene descriptions, question–answer pairs, and goal–instruction pairs to support scene understanding, answering questions, and goal-oriented assistance. The three examples below illustrate object localization, hazard detection, and navigation; hover over a video to explore its recorded modalities or annotations.</p>
+        <p id="examples-status" role="status">Loading examples…</p>
+        <div id="vista-examples" class="example-grid"></div>
+    </div>
+</section>
+<dialog id="example-dialog" aria-labelledby="example-title">
+    <header class="example-dialog-header"><h2 id="example-title"></h2><button id="example-close" type="button" aria-label="Close example">×</button></header>
+    <div class="example-tabs" role="group" aria-label="Example view"><button type="button" data-view="modalities">Modalities</button><button type="button" data-view="annotations">Annotations</button></div>
+    <div id="example-content"></div>
+</dialog>
+
+
+
+<section class="section" id="zero-shot-results">
+    <div class="container is-max-widescreen">
+        <h2 class="title is-2">Zero-shot results on VISTA</h2>
+        <p class="evaluation-context">Reported results use 8 uniformly sampled RGB frames plus task text, evaluated on 1,828 items from 450 test clips: 450 scene descriptions, 510 Q&amp;A items, and 868 guidance items. Judge: GPT-6 Luna (<code>gpt-6-luna</code>), with high reasoning effort and the rubric below.</p>
+        <p class="results-caption" id="zero-shot-caption">Judge scores (0–5). <strong>EG:</strong> evidence grounding (0–1.75); <strong>AC:</strong> answer correctness (0–1.75); <strong>TC:</strong> task completion (0–1); <strong>ACom:</strong> accessible communication (0–0.5). Scene, Q&amp;A, and Guidance report the mean score per annotation type. <strong>Bold</strong>/<u>underline</u>: best/second-best per column within each model group; –: size not disclosed.</p>
+        <div class="results-scroll" tabindex="0" role="region" aria-label="Zero-shot results table">
+            <table class="vista-results" aria-describedby="zero-shot-caption"><thead><tr><th rowspan="2" scope="col">Model</th><th rowspan="2" scope="col">Size</th><th rowspan="2" scope="col">Score</th><th colspan="4" scope="colgroup">Rubric components</th><th colspan="3" scope="colgroup">Response type</th></tr><tr><th scope="col">EG</th><th scope="col">AC</th><th scope="col">TC</th><th scope="col">ACom</th><th scope="col">Scene</th><th scope="col">Q&A</th><th scope="col">Guidance</th></tr></thead><tbody><tr class="model-group"><th colspan="10" scope="colgroup">Open-source models (frames + text)</th></tr><tr><th scope="row">InternVL3</th><td>1B</td><td>2.39</td><td>0.82</td><td>0.79</td><td>0.47</td><td>0.33</td><td>3.49</td><td>3.09</td><td>1.42</td></tr><tr><th scope="row">InternVL3</th><td>2B</td><td>2.75</td><td>0.96</td><td>0.91</td><td>0.54</td><td>0.35</td><td>3.77</td><td>3.19</td><td>1.96</td></tr><tr><th scope="row">InternVL3</th><td>8B</td><td>3.16</td><td>1.09</td><td>1.07</td><td>0.64</td><td>0.38</td><td>3.72</td><td>3.48</td><td>2.69</td></tr><tr><th scope="row">InternVL3</th><td>9B</td><td>3.13</td><td>1.08</td><td>1.06</td><td>0.63</td><td>0.38</td><td>3.63</td><td>3.32</td><td>2.76</td></tr><tr><th scope="row">InternVL3</th><td>14B</td><td><strong>3.33</strong></td><td><strong>1.15</strong></td><td><strong>1.13</strong></td><td><u>0.68</u></td><td><strong>0.40</strong></td><td><strong>3.81</strong></td><td>3.62</td><td><strong>2.91</strong></td></tr><tr class="family-start"><th scope="row">VideoLLaMA3</th><td>7B</td><td>1.76</td><td>0.61</td><td>0.57</td><td>0.32</td><td>0.27</td><td>2.48</td><td>2.43</td><td>1.00</td></tr><tr class="family-start"><th scope="row">Qwen3-VL</th><td>2B</td><td>2.65</td><td>0.91</td><td>0.89</td><td>0.54</td><td>0.33</td><td>3.48</td><td>3.33</td><td>1.82</td></tr><tr><th scope="row">Qwen3-VL</th><td>4B</td><td>3.22</td><td><u>1.11</u></td><td><u>1.10</u></td><td><u>0.68</u></td><td>0.38</td><td><u>3.78</u></td><td>3.69</td><td>2.65</td></tr><tr><th scope="row">Qwen3-VL</th><td>8B</td><td><u>3.31</u></td><td><strong>1.15</strong></td><td><strong>1.13</strong></td><td><strong>0.69</strong></td><td><u>0.39</u></td><td>3.76</td><td>3.69</td><td><u>2.85</u></td></tr><tr class="family-start"><th scope="row">Gemma 3</th><td>4B</td><td>2.73</td><td>0.92</td><td>0.91</td><td>0.58</td><td>0.34</td><td>3.19</td><td>3.49</td><td>2.04</td></tr><tr><th scope="row">Gemma 3</th><td>12B</td><td>3.07</td><td>1.04</td><td>1.05</td><td>0.66</td><td>0.36</td><td>3.41</td><td><u>3.76</u></td><td>2.48</td></tr><tr><th scope="row">Gemma 3</th><td>27B</td><td>3.06</td><td>1.03</td><td>1.05</td><td>0.66</td><td>0.35</td><td>3.32</td><td><strong>3.81</strong></td><td>2.48</td></tr><tr class="model-group"><th colspan="10" scope="colgroup">Proprietary models (frames + text)</th></tr><tr><th scope="row">GPT-Realtime Mini</th><td>–</td><td><u>3.42</u></td><td><u>1.16</u></td><td><u>1.17</u></td><td><u>0.71</u></td><td><u>0.40</u></td><td><u>3.90</u></td><td><u>3.86</u></td><td><u>2.91</u></td></tr><tr class="family-start"><th scope="row">Gemini 3.1 Flash-Lite</th><td>–</td><td><strong>3.75</strong></td><td><strong>1.27</strong></td><td><strong>1.30</strong></td><td><strong>0.80</strong></td><td><strong>0.42</strong></td><td><strong>3.92</strong></td><td><strong>4.20</strong></td><td><strong>3.39</strong></td></tr></tbody></table>
+        </div>
+    </div>
+</section>
+<section class="section" id="multimodal-baseline">
+    <div class="container is-max-widescreen">
+        <h2 class="title is-2">Multimodal baseline</h2>
+        <p class="results-caption">We test whether synchronized sensor streams improve answer quality by training language LoRA adapters and a sensor-fusion network on VISTA in two stages, using 8 then 28 sensor tokens. Answers are generated with greedy decoding and evaluated with the same judge and rubric as the zero-shot baselines.</p>
+        <figure class="pipeline-figure">
+            <img src="figures/vista_pipeline.png" alt="Multimodal VISTA architecture: RGB frames pass through a frozen vision encoder; sensor streams pass through temporal adapters, reliability gates and bottleneck exchange before entering the VLM alongside text tokens. LoRA and sensor fusion are trainable.">
+            <figcaption><strong>Multimodal baseline.</strong> A frozen vision encoder processes RGB frames, while five sensor streams—IMU, magnetometer/barometer, eye gaze, hand tracking, and 6DoF trajectory—produce 8 or 28 sensor tokens through temporal adapters, question-conditioned reliability gates, and bottleneck exchange. Only the LoRA adapters and sensor-fusion network are trained.</figcaption>
+        </figure>
+        <h3 class="title is-3">VISTA versus pretrained backbones</h3>
+        <p class="results-caption" id="multimodal-caption">Each backbone is compared before and after adaptation with VISTA’s sensor-fusion network and language LoRA adapters. Scores use the same judge and rubric as the zero-shot evaluation, with results reported overall, by rubric component, and for scene description, question answering, and guidance. Shaded rows show the adapted VISTA models; green percentages indicate the relative improvement in overall score over the corresponding pretrained backbone.</p>
+        <div class="results-scroll" tabindex="0" role="region" aria-label="VISTA versus pretrained backbones table">
+            <table class="vista-results" aria-describedby="multimodal-caption"><thead><tr><th rowspan="2" scope="col">Model</th><th rowspan="2" scope="col">Size</th><th rowspan="2" scope="col">Method</th><th rowspan="2" scope="col">Score</th><th colspan="4" scope="colgroup">Rubric components</th><th colspan="3" scope="colgroup">Response type</th></tr><tr><th scope="col">EG</th><th scope="col">AC</th><th scope="col">TC</th><th scope="col">ACom</th><th scope="col">Scene</th><th scope="col">Q&A</th><th scope="col">Guidance</th></tr></thead><tbody><tr class="pair-start"><th scope="row">InternVL3</th><td>2B</td><td>Pretrained</td><td>2.75</td><td>0.96</td><td>0.91</td><td>0.54</td><td>0.35</td><td>3.77</td><td>3.19</td><td>1.96</td></tr><tr class="vista-row"><th scope="row">InternVL3</th><td>2B</td><td>VISTA (ours)</td><td>3.54 <span class="result-gain">(+28.7%)</span></td><td>1.24</td><td>1.20</td><td>0.68</td><td>0.42</td><td>3.82</td><td>3.78</td><td>3.28</td></tr><tr class="pair-start"><th scope="row">InternVL3</th><td>8B</td><td>Pretrained</td><td>3.16</td><td>1.09</td><td>1.07</td><td>0.64</td><td>0.38</td><td>3.72</td><td>3.48</td><td>2.69</td></tr><tr class="vista-row"><th scope="row">InternVL3</th><td>8B</td><td>VISTA (ours)</td><td>3.72 <span class="result-gain">(+17.7%)</span></td><td><u>1.29</u></td><td>1.27</td><td><u>0.73</u></td><td><strong>0.44</strong></td><td>4.03</td><td><u>4.07</u></td><td>3.39</td></tr><tr class="pair-start"><th scope="row">Qwen3-VL</th><td>4B</td><td>Pretrained</td><td>3.22</td><td>1.11</td><td>1.10</td><td>0.68</td><td>0.38</td><td>3.78</td><td>3.69</td><td>2.65</td></tr><tr class="vista-row"><th scope="row">Qwen3-VL</th><td>4B</td><td>VISTA (ours)</td><td><strong>3.95</strong> <span class="result-gain">(+22.7%)</span></td><td><strong>1.39</strong></td><td><strong>1.36</strong></td><td><strong>0.76</strong></td><td><strong>0.44</strong></td><td><strong>4.25</strong></td><td><strong>4.18</strong></td><td><u>3.69</u></td></tr><tr class="pair-start"><th scope="row">Qwen3-VL</th><td>8B</td><td>Pretrained</td><td>3.31</td><td>1.15</td><td>1.13</td><td>0.69</td><td>0.39</td><td>3.76</td><td>3.69</td><td>2.85</td></tr><tr class="vista-row"><th scope="row">Qwen3-VL</th><td>8B</td><td>VISTA (ours)</td><td><u>3.93</u> <span class="result-gain">(+18.7%)</span></td><td><strong>1.39</strong></td><td><u>1.35</u></td><td><strong>0.76</strong></td><td><strong>0.44</strong></td><td><u>4.19</u></td><td>4.04</td><td><strong>3.74</strong></td></tr><tr class="pair-start"><th scope="row">Gemma 3</th><td>12B</td><td>Pretrained</td><td>3.07</td><td>1.04</td><td>1.05</td><td>0.66</td><td>0.36</td><td>3.41</td><td>3.76</td><td>2.48</td></tr><tr class="vista-row"><th scope="row">Gemma 3</th><td>12B</td><td>VISTA (ours)</td><td>3.24 <span class="result-gain">(+5.5%)</span></td><td>1.08</td><td>1.10</td><td>0.64</td><td><u>0.43</u></td><td>3.00</td><td>3.30</td><td>3.32</td></tr></tbody></table>
+        </div>
+    </div>
+</section>
+
+
+   
+
+<section class="section" id="BibTeX">
+    <div class="container is-max-widescreen content">
+        <h2 class="title">BibTeX</h2>
+        <pre><code>@misc{mosca2026vista,
+    title   = {{VISTA}: A Multimodal Egocentric Benchmark for Goal-Oriented Perception and Assistance to Blind and Low-Vision Users},
+    author  = {Noé Mosca and Mohamed Rayan Barhdadi and Muhammad Hamza and Joshua Yeh and Suryodaya Bikram Shahi and Zhiyan Li and Selim-Antoine Lali and Weiyue Li and Hasan Kurban and Erchin Serpedin and Gang Luo and Yue Zhang and Minghan Li and Mengyu Wang},
+    year    = {2026},
+}
+</code></pre>
+    </div>
+</section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column">
+                    <div class="content has-text-centered">
+                        <p>
+                            Website template borrowed from <a
+                                href="https://github.com/nerfies/nerfies.github.io">NeRFies</a>,
+                                <a href="https://droid-dataset.github.io/">DROID</a>,
+                                and <a href="https://eureka-research.github.io/">Eureka</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

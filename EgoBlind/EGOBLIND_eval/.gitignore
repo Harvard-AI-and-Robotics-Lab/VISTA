@@ -1,0 +1,21 @@
+# Local environments and Python caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+# Credentials
+.env
+.env.*
+!*example*
+*key*.txt
+*credentials*.json
+# Local data and results
+out/
+outputs/
+data/
+*.jsonl
+*.csv
+*.mp4
+# Operating system metadata
+.DS_Store
+._*

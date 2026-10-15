@@ -1,0 +1,427 @@
+--- /dev/null
++++ b/vista_mm/attention.py
+@@ -0,0 +1,34 @@
++"""Use PyTorch's causal SDPA kernels without quadratic masks for padded batches."""
++import torch
++import torch.nn.functional as F
++from transformers import AttentionInterface
++from transformers.masking_utils import AttentionMaskInterface, flash_attention_mask
++from transformers.integrations.sdpa_attention import sdpa_attention_forward
++
++
++def padded_sdpa(module, query, key, value, attention_mask, dropout=0.0, scaling=None, is_causal=None, **kwargs):
++    if attention_mask is None or attention_mask.ndim != 2:
++        return sdpa_attention_forward(module,query,key,value,attention_mask,dropout,scaling,is_causal,**kwargs)
++    outputs=[]
++    qlen,klen=query.shape[-2],key.shape[-2]
++    if qlen != klen and qlen != 1:
++        raise ValueError('Only full-sequence training or single-token cached decode supported')
++    for b in range(query.shape[0]):
++        keep=torch.nonzero(attention_mask[b,:klen],as_tuple=False).flatten()
++        qkeep=torch.nonzero(attention_mask[b,-qlen:],as_tuple=False).flatten()
++        q=query[b:b+1].index_select(2,qkeep)
++        k=key[b:b+1].index_select(2,keep)
++        v=value[b:b+1].index_select(2,keep)
++        out,_=sdpa_attention_forward(module,q,k,v,None,dropout,scaling,qlen>1,**kwargs)
++        padded=out.new_zeros((1,qlen,out.shape[2],out.shape[3])).index_copy(1,qkeep,out)
++        outputs.append(padded)
++    return torch.cat(outputs,dim=0),None
++
++
++def enable_padded_sdpa(model):
++    # Gemma's image-prefix and sliding-window masks require its native implementation.
++    if model.config.model_type not in ('internvl','qwen3_vl'):
++        return
++    AttentionInterface.register('vista_padded_sdpa',padded_sdpa)
++    AttentionMaskInterface.register('vista_padded_sdpa',flash_attention_mask)
++    model.model.language_model.config._attn_implementation='vista_padded_sdpa'
+--- a/vista_mm/config.py
++++ b/vista_mm/config.py
+@@ -112,6 +112,7 @@
+     sensor: dict = field(default_factory=dict)
+     seed: int = 17
+     train_mode: str = "full"  # full LLM, lora, or alignment-only
++    visual_mode: str = "native"
+     num_frames: int = 8
+     min_pixels: int = 128 * 32 * 32
+     max_pixels: int = 384 * 32 * 32
+--- a/vista_mm/data.py
++++ b/vista_mm/data.py
+@@ -52,6 +52,24 @@
+                     ]
+                 )
+                 images.append(np.ascontiguousarray(crop))
++    return content, images
++
++
++def retained_frame_tiles(frames, tile_size):
++    """Cover every original pixel with a regular grid; pad edges, never downsample."""
++    content, images = [], []
++    for index, frame in enumerate(frames):
++        h, w = frame.shape[:2]
++        for y in range(0, h, tile_size):
++            for x in range(0, w, tile_size):
++                crop = frame[y:y+tile_size, x:x+tile_size]
++                padded = np.zeros((tile_size, tile_size, 3), dtype=frame.dtype)
++                padded[:crop.shape[0], :crop.shape[1]] = crop
++                images.append(padded)
++                content.extend([
++                    {"type": "text", "text": f"Frame {index+1}, tile row {y//tile_size+1}, column {x//tile_size+1}:"},
++                    {"type": "image"},
++                ])
+     return content, images
+ 
+ 
+@@ -342,6 +360,40 @@
+                 ],
+             },
+         ]
++        if self.config.visual_mode == "retained_1408":
++            if any(frame.shape[:2] != (1408, 1408) for frame in example["frames"]):
++                raise ValueError("Retained-1408 run requires original 1408x1408 frames")
++            family = self.processor.__class__.__name__
++            if family == "InternVLProcessor":
++                # Nine 476px tiles per frame; 476 is divisible by 28. Native vision
++                # positional interpolation handles this small change from 448.
++                # 9*289*8 visual tokens fits the native 32768-token text context.
++                content, images = retained_frame_tiles(example["frames"], 476)
++                self.processor.image_seq_length = 289
++                image_args = {"crop_to_patches": False, "size": {"height":476,"width":476}}
++            elif family == "Gemma3Processor":
++                content, images = retained_frame_tiles(example["frames"], 896)
++                image_args = {"do_pan_and_scan": False}
++            else:
++                images = list(example["frames"])
++                content = []
++                for index, timestamp in enumerate(example["frame_times"]):
++                    content.extend([{"type":"text","text":f"Frame {index+1} at {float(timestamp):.2f}s:"},{"type":"image"}])
++                image_args = {"size":{"shortest_edge":1408*1408,"longest_edge":1408*1408}}
++            content.append({"type":"text","text":example["question"] + slots})
++            if family == "Gemma3Processor":
++                content[-1]["text"] = system + "\n" + content[-1]["text"]
++                messages = [{"role":"user","content":content}]
++            else:
++                messages[1]["content"] = content
++            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
++            inputs = self.processor(text=[text], images=images, return_tensors="pt", images_kwargs=image_args)
++            if family != "Gemma3Processor":
++                inputs.pop("token_type_ids", None)
++            inputs.pop("mm_token_type_ids", None)
++            if inputs["input_ids"].shape[-1] >= self.config.max_length:
++                raise ValueError("High-resolution prompt exceeds context budget")
++            return inputs
+         if self.processor.__class__.__name__ == "Gemma3Processor":
+             content = []
+             for index, timestamp in enumerate(example["frame_times"]):
+--- a/vista_mm/features.py
++++ b/vista_mm/features.py
+@@ -124,25 +124,11 @@
+             raise ValueError(
+                 f"Video/clock frame mismatch for {video}: {count} != {expected_count}"
+             )
+-        frames = []
+-        for idx in indices:
+-            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+-            ok, frame = cap.read()
+-            if not ok:
+-                break
+-            frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+-        if len(frames) == len(indices):
+-            return np.stack(frames)
+-    finally:
+-        cap.release()
+-
+-    # Some H.264 streams decode correctly but cannot seek to their last frame.
+-    # Decode from the start and retrieve the exact original indices; never
+-    # substitute neighboring frames or change the prepared timestamps.
+-    cap = cv2.VideoCapture(str(video))
+-    wanted = set(indices)
+-    selected = {}
+-    try:
++        # Seeking can report success yet return an early frame repeatedly on
++        # some OpenCV/FFmpeg builds. Decode from frame zero to preserve the
++        # prepared frame indices, including duplicates and caller ordering.
++        wanted = set(indices)
++        selected = {}
+         for idx in range(max(indices) + 1):
+             if not cap.grab():
+                 raise ValueError(f"Cannot sequentially decode {video} frame {idx}")
+--- a/vista_mm/model.py
++++ b/vista_mm/model.py
+@@ -6,6 +6,7 @@
+ """
+ 
+ import torch
++import types
+ import torch.nn.functional as F
+ from torch import nn
+ from transformers import Qwen3VLForConditionalGeneration
+@@ -14,6 +15,16 @@
+ from .fusion import ModalityAdapter, SensorFusion
+ 
+ SENSOR_TOKEN = "<|vista_sensor|>"
++
++
++def linear_patch_projection(module, hidden_states):
++    # Each input is already one complete non-overlapping Conv3d patch.
++    # The one-output-cell convolution is exactly the same affine map as GEMM.
++    # Avoid cuDNN's pathological large-batch tiny-volume Conv3d path.
++    weight = module.proj.weight
++    return F.linear(hidden_states.reshape(-1, weight[0].numel()).to(weight.dtype),
++                    weight.flatten(1), module.proj.bias)
++
+ 
+ 
+ class VistaQwen3VL(Qwen3VLForConditionalGeneration):
+@@ -29,6 +40,8 @@
+ 
+     def __init__(self, config):
+         super().__init__(config)
++        patch = self.model.visual.patch_embed
++        patch.forward = types.MethodType(linear_patch_projection, patch)
+         cfg = SensorConfig(**getattr(config, "vista_sensor", {}))
+         self.sensor_encoder = SensorFusion(config.text_config.hidden_size, cfg)
+         self.sensor_encoder.apply(self._init_weights)
+--- a/vista_mm/predict.py
++++ b/vista_mm/predict.py
+@@ -77,6 +77,7 @@
+         "sensor",
+         "train_mode",
+         "num_frames",
++        "visual_mode",
+         "min_pixels",
+         "max_pixels",
+     ):
+--- a/vista_mm/train.py
++++ b/vista_mm/train.py
+@@ -1,11 +1,14 @@
+ """Full VISTA training for InternVL3, Qwen3-VL and Gemma 3."""
+ 
+ import argparse
++import os
++import torch.distributed as dist
+ from pathlib import Path
+ import torch
+ from transformers import (
+     AutoConfig,
+     AutoProcessor,
++    InternVLForConditionalGeneration,
+     Trainer,
+     TrainerCallback,
+     TrainingArguments,
+@@ -25,6 +28,7 @@
+ from .model import SENSOR_TOKEN, VistaQwen3VL
+ from .gemma_model import VistaGemma3
+ from .loss import response_statistics
++from .attention import enable_padded_sdpa
+ from .provenance import atomic_json, environment_record, sha256
+ 
+ 
+@@ -34,13 +38,13 @@
+     def __init__(self, steps):
+         self.steps = steps
+ 
+-    def on_step_begin(self, args, state, control, model=None, **kwargs):
+-        if args.world_size != 1:
+-            raise ValueError("Sensor warmup currently supports single-GPU jobs only")
+-        enabled = state.global_step >= self.steps
+-        for name, parameter in model.named_parameters():
+-            if "lora_" in name:
+-                parameter.requires_grad_(enabled)
++    def on_pre_optimizer_step(self, args, state, control, model=None, **kwargs):
++        # Keep DDP's parameter set stable. Discard LoRA grads during sensor warmup
++        # so AdamW also skips momentum and weight-decay updates for these weights.
++        if state.global_step < self.steps:
++            for name, parameter in model.named_parameters():
++                if "lora_" in name:
++                    parameter.grad = None
+         return control
+ 
+ 
+@@ -122,11 +126,13 @@
+         model_config.vista_sensor = sensor_cfg.to_dict()
+     model_config.vista_experiment = config.to_dict()
+     model_config.vista_original_vocab_size = model_config.text_config.vocab_size
+-    if not use_sensors:
+-        raise ValueError("This suite runs full VISTA only")
+     cls = {"internvl": VistaInternVL, "qwen3_vl": VistaQwen3VL, "gemma3": VistaGemma3}[
+         model_config.model_type
+     ]
++    if not use_sensors:
++        if model_config.model_type != "internvl":
++            raise ValueError("RGB-only ablations currently support InternVL only")
++        cls = InternVLForConditionalGeneration
+     model = cls.from_pretrained(
+         source,
+         revision=revision,
+@@ -134,6 +140,8 @@
+         torch_dtype=torch.bfloat16,
+         attn_implementation=config.attention,
+     )
++    enable_padded_sdpa(model)
++    processor.tokenizer.model_max_length = config.max_length
+     if use_sensors:
+         if checkpoint is None:
+             initialize_frontends(model, config)
+@@ -259,7 +267,7 @@
+                 from deepspeed.ops.adam import DeepSpeedCPUAdam
+ 
+                 optimizer_cls = DeepSpeedCPUAdam
+-        self.optimizer = optimizer_cls(groups, betas=(0.9, 0.95), eps=1e-08)
++        self.optimizer = optimizer_cls(groups, betas=(0.9, 0.95), eps=1e-08, **({"fused": True} if optimizer_cls is torch.optim.AdamW else {}))
+         return self.optimizer
+ 
+     def compute_loss(
+@@ -267,8 +275,12 @@
+     ):
+         inputs = dict(inputs)
+         labels = inputs.pop("labels")
+-        outputs = model(**inputs, use_cache=False)
+-        loss = response_statistics(outputs.logits, labels)[0].mean()
++        # Project only the suffix needed for answer loss, including the preceding
++        # prediction position. This is mathematically identical to full logits.
++        first = int(torch.nonzero(labels.ne(-100), as_tuple=False)[:, 1].min())
++        start = max(0, first - 1)
++        outputs = model(**inputs, use_cache=False, logits_to_keep=labels.shape[1] - start)
++        loss = response_statistics(outputs.logits, labels[:, start:])[0].mean()
+         outputs.loss = loss
+         return (loss, outputs) if return_outputs else loss
+ 
+@@ -278,6 +290,11 @@
+     parser.add_argument("--config", required=True)
+     args = parser.parse_args()
+     cfg = Experiment.load(args.config)
++    rank = int(os.environ.get("RANK", "0"))
++    world = int(os.environ.get("WORLD_SIZE", "1"))
++    if world > 1:
++        torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
++        dist.init_process_group("nccl")
+     if (
+         cfg.gradient_modulation != "none"
+         or cfg.smoke_seconds
+@@ -293,25 +310,28 @@
+     )
+     assets = resolve_encoder_configuration(cfg, cfg.initial_adapter)
+     root = Path(cfg.output_dir)
+-    root.mkdir(parents=True, exist_ok=True)
+-    if any(root.iterdir()):
+-        raise FileExistsError(f"Training directory is nonempty: {root}")
+-    atomic_json(root / "experiment.json", cfg.to_dict())
+-    atomic_json(root / "prepared_manifest.json", manifest)
+-    source = {
+-        str(p.relative_to(Path(__file__).parent)): sha256(p)
+-        for p in Path(__file__).parent.rglob("*.py")
+-    }
+-    atomic_json(
+-        root / "run.json",
+-        {
+-            "source_sha256": source,
+-            "encoder_assets": assets,
+-            "environment": environment_record(),
+-            "config_sha256": sha256(args.config),
+-            "fixed_final_step": cfg.max_steps,
+-        },
+-    )
++    if rank == 0:
++        root.mkdir(parents=True, exist_ok=True)
++        if any(root.iterdir()):
++            raise FileExistsError(f"Training directory is nonempty: {root}")
++        atomic_json(root / "experiment.json", cfg.to_dict())
++        atomic_json(root / "prepared_manifest.json", manifest)
++        source = {
++            str(p.relative_to(Path(__file__).parent)): sha256(p)
++            for p in Path(__file__).parent.rglob("*.py")
++        }
++        atomic_json(
++            root / "run.json",
++            {
++                "source_sha256": source,
++                "encoder_assets": assets,
++                "environment": environment_record(),
++                "config_sha256": sha256(args.config),
++                "fixed_final_step": cfg.max_steps,
++            },
++        )
++    if world > 1:
++        dist.barrier()
+     training_args = TrainingArguments(
+         output_dir=str(root),
+         seed=cfg.seed,
+@@ -328,10 +348,13 @@
+         max_grad_norm=cfg.max_grad_norm,
+         bf16=True,
+         tf32=True,
+-        gradient_checkpointing=True,
++        gradient_checkpointing=cfg.gradient_checkpointing,
+         gradient_checkpointing_kwargs={"use_reentrant": False},
+         eval_strategy="steps",
+-        eval_steps=70,
++        eval_steps=cfg.eval_steps,
++        ddp_find_unused_parameters=True,
++        dataloader_prefetch_factor=1 if cfg.workers else None,
++        optim="adamw_torch_fused",
+         save_strategy="no",
+         logging_steps=1,
+         logging_nan_inf_filter=False,
+@@ -343,15 +366,16 @@
+     )
+     model, processor = load_backbone(cfg)
+     model = configure_trainable(model, cfg)
+-    atomic_json(
+-        root / "parameters.json",
+-        {
+-            "trainable": sum(p.numel() for p in model.parameters() if p.requires_grad),
+-            "total": sum(p.numel() for p in model.parameters()),
+-            "gpu": torch.cuda.get_device_name(),
+-            "effective_batch": cfg.batch_size * cfg.accumulation,
+-        },
+-    )
++    if rank == 0:
++        atomic_json(
++            root / "parameters.json",
++            {
++                "trainable": sum(p.numel() for p in model.parameters() if p.requires_grad),
++                "total": sum(p.numel() for p in model.parameters()),
++                "gpu": torch.cuda.get_device_name(),
++                "effective_batch": cfg.batch_size * cfg.accumulation * world,
++            },
++        )
+     trainer = VistaTrainer(
+         model=model,
+         args=training_args,
+@@ -369,19 +393,23 @@
+         training_result = trainer.train()
+     trainer.save_metrics("train", training_result.metrics)
+     trainer.save_model(str(root / "adapter"))
+-    processor.save_pretrained(root / "adapter")
+-    trainer.state.save_to_json(str(root / "trainer_state.json"))
+-    atomic_json(
+-        root / "training.complete.json",
+-        {
+-            "global_step": trainer.state.global_step,
+-            "checkpoint": str(root / "adapter"),
+-            "files": {
+-                p.name: sha256(p) for p in (root / "adapter").iterdir() if p.is_file()
++    if trainer.is_world_process_zero():
++        processor.save_pretrained(root / "adapter")
++        trainer.state.save_to_json(str(root / "trainer_state.json"))
++        atomic_json(
++            root / "training.complete.json",
++            {
++                "global_step": trainer.state.global_step,
++                "checkpoint": str(root / "adapter"),
++                "files": {
++                    p.name: sha256(p) for p in (root / "adapter").iterdir() if p.is_file()
++                },
++                "criterion": "Fixed final step, no judge-based selection",
+             },
+-            "criterion": "Fixed final step, no judge-based selection",
+-        },
+-    )
++        )
++    if world > 1:
++        dist.barrier()
++        dist.destroy_process_group()
+ 
+ 
+ if __name__ == "__main__":

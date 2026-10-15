@@ -1,0 +1,40 @@
+# Environment for the Qwen3-VL model keys (qwen3vl_2b / 4b / 8b / 32b).
+#
+# Qwen3-VL and the default Gemma 3 backend load through vLLM in models.py.
+# vLLM hard-pins one exact torch build, which is the entire reason this environment has to
+# be separate from requirements_internvl3.txt -- do not try to merge them.
+#
+# Verified working on this server 2026-09-08 with Python 3.12.13, CUDA driver 13.0,
+# NVIDIA RTX 6000 Ada (sm_89). vLLM pulls torch 2.11.0+cu130 itself; do not pin torch
+# here or pip will fight vLLM's resolver.
+#
+# Install:
+#     python3.12 -m venv <prefix>
+#     <prefix>/bin/pip install -U pip setuptools wheel
+#     <prefix>/bin/pip install -r requirements_qwen.txt
+#
+# Note: Qwen3-VL support requires vllm >= 0.11. Older vLLM releases will fail with an
+# unknown-architecture error on these checkpoints.
+
+vllm==0.25.1
+transformers==5.13.1
+
+# Qwen vision preprocessing helper, imported by the Qwen3-VL path.
+qwen-vl-utils==0.0.14
+
+# Frame extraction in models.py uses cv2; the headless build avoids pulling GUI libs.
+opencv-python-headless==5.0.0.93
+av==18.1.0
+websockets>=15,<17
+
+pandas==3.0.5
+tqdm==4.70.0
+accelerate==1.14.0
+
+# Pulled in transitively by vllm, recorded here for reproducibility:
+#   torch==2.11.0+cu130  torchvision==0.26.0  torchaudio==2.11.0
+#   triton==3.6.0  flashinfer-python==0.6.13  tokenizers==0.22.2
+#   numpy==2.3.5  huggingface_hub==1.30.0
+
+# Gemini inference additionally requires google-genai (from google import genai).
+# GPT Realtime Mini uses the HTTP and WebSocket libraries in this environment.
