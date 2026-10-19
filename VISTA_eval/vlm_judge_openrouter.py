@@ -16,6 +16,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 import requests
 
@@ -62,6 +63,7 @@ class CostTracker:
 
 DEFAULT_RUBRIC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     "prompts", "assistancevlmjudge_vista.json")
+DEFAULT_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 # Fallback mapping from dataset response types to a multi-task rubric's guidance.
 # A rubric containing one task uses that guidance block for every item.
@@ -74,13 +76,32 @@ V5_COMPONENTS = ("evidence_grounding", "answer_correctness",
 # 1. API call
 # ===========================================================================
 
-def _read_api_key(path):
+def _read_api_key(path=None):
+    """Prefer an explicit file, then the shell, repository .env, and legacy file."""
+    if path is None:
+        key = os.environ.get("OPENAI_API_KEY", "").strip()
+        if key:
+            return key
+        if DEFAULT_ENV_PATH.is_file():
+            # Training imports the shared rubric without needing python-dotenv.
+            from dotenv import dotenv_values
+
+            key = (dotenv_values(DEFAULT_ENV_PATH, encoding="utf-8-sig")
+                   .get("OPENAI_API_KEY") or "").strip()
+            if key:
+                return key
+        path = BACKENDS["openai"]["key_file"]
+        if not os.path.isfile(path):
+            raise SystemExit(
+                "[ERROR] Set OPENAI_API_KEY in the repository's .env or shell, "
+                "or pass --api-key-file."
+            )
     if not os.path.exists(path):
         raise SystemExit(f"[ERROR] {path} does not exist.")
-    with open(path) as f:
+    with open(path, encoding="utf-8-sig") as f:
         key = f.read().strip()
     if not key:
-        raise SystemExit(f"[ERROR] {path} is empty — provide an OpenAI API key file.")
+        raise SystemExit(f"[ERROR] {path} is empty; provide an OpenAI API key.")
     return key
 
 
@@ -259,16 +280,14 @@ BACKENDS = {
 
 
 def resolve_backend(args, tracker=None):
-    """Fill in --judge-model/--api-key-file defaults for the chosen backend, validate
-    the pair, and return (model_id, call function, cost tracker or None).
+    """Resolve and validate --judge-model for the chosen backend, then return
+    (model_id, call function, cost tracker or None).
 
     Pass an existing tracker to accumulate estimated spend across run() calls.
     There is no spending limit."""
     cfg = BACKENDS[args.backend]
     if args.judge_model is None:
         args.judge_model = cfg["default_model"]
-    if args.api_key_file is None:
-        args.api_key_file = cfg["key_file"]
     if args.judge_model not in cfg["models"]:
         raise SystemExit(f"[ERROR] --judge-model {args.judge_model!r} invalid for --backend "
                           f"{args.backend}; choices: {', '.join(cfg['models'])}")
@@ -511,7 +530,7 @@ def run_batch(args):
         print("[batch] --dry-run: not calling the API")
         return
 
-    api_key = _read_api_key(args.api_key_file)  # fail fast before any work if the key file is empty/missing
+    api_key = _read_api_key(args.api_key_file)  # Fail fast if credentials are unavailable.
 
     loaded_datasets = {}
     out_paths = []
@@ -565,8 +584,7 @@ def main():
                         ". Defaults to the backend's first-listed model.")
     r.add_argument("--out", required=True)
     r.add_argument("--api-key-file", default=None,
-                   help="Defaults per backend: " +
-                        ", ".join(f"{b}={c['key_file']}" for b, c in BACKENDS.items()))
+                   help="Optional key file overriding OPENAI_API_KEY from the shell or repository .env")
     r.add_argument("--concurrency", type=int, default=8)
     r.add_argument("--reasoning-effort", default=OPENAI_REASONING_EFFORT,
                    choices=[OPENAI_REASONING_EFFORT],
@@ -597,7 +615,7 @@ def main():
     b.add_argument("--judge-model", default=None,
                    help="Same keys as `run --judge-model`; defaults per --backend")
     b.add_argument("--api-key-file", default=None,
-                   help="Defaults per backend, as for `run`")
+                   help="Optional key file overriding OPENAI_API_KEY from the shell or repository .env")
     b.add_argument("--num-frames", type=int, default=8)
     b.add_argument("--concurrency", type=int, default=8)
     b.add_argument("--reasoning-effort", default=OPENAI_REASONING_EFFORT,

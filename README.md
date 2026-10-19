@@ -9,94 +9,125 @@ zero-shot inference, sensor-conditioned model training, and evaluation for VISTA
 
 ## Dataset Setup
 
-Load the annotation tables from [Hugging Face](https://huggingface.co/datasets/harvardairobotics/VISTA):
+Download the full VISTA dataset, including annotations and all available modalities, from
+[Hugging Face](https://huggingface.co/datasets/harvardairobotics/VISTA):
 
-```python
-from datasets import load_dataset
-
-# Login using e.g. `hf auth login` to access this dataset
-ds = load_dataset("harvardairobotics/VISTA")
+```bash
+python -m pip install -U huggingface_hub
+hf download harvardairobotics/VISTA --repo-type dataset --local-dir /path/to/VISTA
 ```
 
-### Quick Start
+This downloads all three splits with their available video, audio, sensor, and tracking files:
 
-Use `train.csv` for training and `test.csv` for evaluation. Each row represents
-one clip; media and sensor files are located using its `clip_id` under `train/`
-or `test/`. Individual clips can have additional audio and metadata files; some
-derived tracking files are missing, as documented in the dataset card.
-
-For an already downloaded dataset:
-
-```python
-import csv
-from pathlib import Path
-
-root = Path("/path/to/VISTA")
-with (root / "test.csv").open(encoding="utf-8-sig", newline="") as handle:
-    sample = next(csv.DictReader(handle))
-
-clip_id = sample["clip_id"]
-clip = root / "test" / clip_id.split("_")[0] / clip_id
-rgb_video = clip / f"{clip_id}.mp4"
-slam_left = clip / "vrs" / "slam_left.mp4"
-question_audio = clip / "generated-audio" / "q1.wav"
+```text
+/path/to/VISTA/
+  train.csv
+  val.csv
+  test.csv
+  train/
+  val/
+  test/
 ```
 
 ## Zero-Shot Inference
 
-Install the [model dependencies](VISTA_benchmark/README.md#environment-setup), then run:
+Run the commands below from this code repository's root, using Linux/Bash and
+Python 3.12. Install only the environment for your model. Local models require
+CUDA; hosted models require API credentials.
+
+### Environment Setup
+
+For paid API models (GPT Realtime Mini or Gemini), install:
 
 ```bash
-cp .env.example .env
-# Edit .env to set VISTA_DATASET_DIR and credentials.
-bash VISTA_benchmark/run.bash gpt_realtime_mini
+python3.12 -m venv VISTA_benchmark/venvs/venv_api
+VISTA_benchmark/venvs/venv_api/bin/python -m pip install \
+  -r VISTA_benchmark/requirements/requirements_api.txt
 ```
 
-Predictions are saved to `VISTA_benchmark/outputs/`. Add a second argument
-(e.g. `5`) to limit clips. See the [benchmark README](VISTA_benchmark/README.md)
-for more options.
+These API models use the launcher's `venv_api` environment without requiring a
+local GPU. See the [benchmark setup guide](VISTA_benchmark/README.md) for
+open-source model installation.
 
 ### Supported Models
 
-| Model | CLI keys |
+| Models | CLI keys |
 |---|---|
 | Qwen3-VL | `qwen3vl_2b`, `qwen3vl_4b`, `qwen3vl_8b`, `qwen3vl_32b` |
 | InternVL3 | `internvl3_1b`, `internvl3_2b`, `internvl3_8b`, `internvl3_9b`, `internvl3_14b` |
+| VideoLLaMA3 | `llama3_video` |
 | Gemma 3 | `gemma3_4b`, `gemma3_12b`, `gemma3_27b` |
-| VideoLLaMA3 7B | `llama3_video` |
-| LLaVA-Video 7B | `llava_video` |
-| GPT Realtime Mini | `gpt_realtime_mini` |
 | Gemini 3.1 Flash-Lite | `gemini_3_1_flash_lite` |
+| GPT Realtime Mini | `gpt_realtime_mini` |
+| LLaVA-Video | `llava_video` |
 
-## Evaluation
-
-[VISTA_eval](VISTA_eval/README.md) scores predictions with GPT-6 Luna, high reasoning,
-and the four-component v5 rubric (0-5, with a 1.95 critical-error cap).
+### Run
 
 ```bash
-cd VISTA_eval
-python vlm_judge_openrouter.py run --dataset dataset_vista \
-  --dataset-root /path/to/VISTA/test --csv /path/to/VISTA/test.csv \
-  --preds /path/to/predictions_mymodel.jsonl --model-name mymodel \
-  --api-key-file /path/to/openai_key.txt --out out/mymodel.jsonl
-python vlm_judge_openrouter.py aggregate out/mymodel.jsonl
+cp .env.example .env
+# Set VISTA_DATASET_DIR=/path/to/VISTA and your model's credentials in .env.
+bash VISTA_benchmark/run.bash gpt_realtime_mini 5
 ```
 
-## Sensor-Conditioned Model Training
+`VISTA_DATASET_DIR` must contain both `test.csv` and `test/`; do not set it to the
+`test/` folder itself. Set `OPENAI_API_KEY` or `GEMINI_API_KEY` for hosted models.
+Remove `5` to run the full test split.
 
-[VISTA_training](VISTA_training/README.md) supports InternVL3 2B/8B, Qwen3-VL 4B/8B,
-and Gemma 3 12B. The baseline combines RGB with IMU, magnetometer/barometer, gaze,
-hands, and trajectory using question-conditioned sensor fusion and LoRA.
-Training requires the prepared `native_v2` dataset and pretrained encoder assets.
+## VLM-as-a-Judge Evaluation
+
+The default judge is GPT-6 Luna with `high` reasoning effort.
+Set up the environment:
 
 ```bash
+python3 -m venv VISTA_eval/.venv
+source VISTA_eval/.venv/bin/activate
+python -m pip install -r VISTA_eval/requirements.txt
+```
+
+Set `OPENAI_API_KEY` in the repository's `.env`, then run with your prediction file:
+
+```bash
+python VISTA_eval/vlm_judge_openrouter.py run \
+  --dataset dataset_vista \
+  --csv /path/to/VISTA/test.csv --dataset-root /path/to/VISTA/test \
+  --preds /path/to/predictions_candidate.jsonl \
+  --model-name candidate \
+  --out VISTA_eval/out/candidate.jsonl
+```
+
+See the [evaluation guide](VISTA_eval/README.md) for aggregation and more options.
+
+## VISTA Sensor-Conditioned Model
+
+Install the model environment on Linux with a CUDA-capable GPU:
+
+```bash
+python -m pip install uv
 cd VISTA_training
 uv sync --python 3.11 --frozen
 source .venv/bin/activate
-python run.py train --model internvl3_2b --stage both \
-  --prepared /path/to/native_v2 --encoder-assets /path/to/encoders/v1
 ```
 
-See the training README for checkpoints, inference, Judge 3, and verification.
+Accounts with access to the released VISTA checkpoints can download them with:
 
-The additional EgoBlind benchmark is documented in [EgoBlind](EgoBlind/README.md).
+```bash
+python run.py download-checkpoint --model internvl3_2b
+python run.py download-checkpoint --model internvl3_8b
+```
+
+Run test inference with the released VISTA 8B checkpoint:
+
+```bash
+python run.py predict --model internvl3_8b \
+  --checkpoint checkpoints/internvl3_8b/stage2/adapter \
+  --prepared /path/to/prepared \
+  --encoder-assets /path/to/encoders
+```
+
+For training VISTA, data requirements, and other model backbones, see the
+[VISTA training guide](VISTA_training/README.md).
+
+## EgoBlind
+
+See the [EgoBlind guide](EgoBlind/README.md) for its dataset setup, zero-shot
+inference, text metrics, and judging.

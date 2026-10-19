@@ -104,7 +104,7 @@
     "prompt_source": "Appendix B.4",
     "paper_sha256": "48839d734cce1aafb3b16bae6e6dc6af4d35dd52cd5672c19465b7ed7dab27b6",
     "canonical_engine": "VISTA_eval/vlm_judge_openrouter.py",
-    "canonical_engine_sha256": "dee73ed486a1990747d2d4751dcc1e04da665b173b0f22412f42a730abb55fc5",
+    "canonical_engine_sha256": "a4e7398f227da20131e2c66530cc2c902c2107bf8056172569bb3ac18b3a8296",
     "canonical_dataset": "VISTA_eval/dataset_vista.py",
     "canonical_dataset_sha256": "4c6db13e96d98f08067342c94856e88ad0f46570756aa1f127b094d9e6fdfe4f",
     "format_correction_retries": 0,

@@ -83,8 +83,8 @@ VENV_MAP["llama3_video"]="venv_videollama"
 VENV_MAP["gemma3_4b"]="venv_qwen"
 VENV_MAP["gemma3_12b"]="venv_qwen"
 VENV_MAP["gemma3_27b"]="venv_qwen"
-VENV_MAP["gemini_3_1_flash_lite"]="venv_qwen"
-VENV_MAP["gpt_realtime_mini"]="venv_qwen"
+VENV_MAP["gemini_3_1_flash_lite"]="venv_api"
+VENV_MAP["gpt_realtime_mini"]="venv_api"
 
 if [ -z "${TP_NEEDED[$MODEL]+x}" ]; then
     echo "[ERROR] Unknown model key: $MODEL"
@@ -146,7 +146,7 @@ export FLASHINFER_CACHE_DIR="${FLASHINFER_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.ca
 ENV_PREFIX="$ENVS_DIR/$VENV"
 if [ ! -x "$ENV_PREFIX/bin/python" ]; then
     echo "[ERROR] No python at $ENV_PREFIX/bin/python (model $MODEL wants env '$VENV')."
-    echo "[ERROR] Create or symlink the environment under $ENVS_DIR; see VISTA_benchmark/README.md."
+    echo "[ERROR] Create or symlink the environment under $ENVS_DIR; see README.md#environment-setup."
     exit 1
 fi
 PY="$ENV_PREFIX/bin/python"

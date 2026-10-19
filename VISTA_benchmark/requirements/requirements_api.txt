@@ -1,0 +1,11 @@
+# API-only inference for GPT Realtime Mini and Gemini.
+# run.bash uses venv_api for both hosted models; local GPU packages are unnecessary.
+numpy
+pandas
+opencv-python-headless
+Pillow
+requests
+tqdm
+httpx>=0.28,<2
+websockets>=15,<17
+google-genai>=1,<2

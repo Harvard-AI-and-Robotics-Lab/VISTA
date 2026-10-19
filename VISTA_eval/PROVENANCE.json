@@ -1,7 +1,7 @@
 {
   "source_engine": "VISTA_eval/vlm_judge_openrouter.py",
   "source_engine_sha256": "b4315f1f321a8a242d4b3e2da72835d182c130a8a3cba94c2d26468f4ef56d5e",
-  "packaged_engine_sha256": "dee73ed486a1990747d2d4751dcc1e04da665b173b0f22412f42a730abb55fc5",
+  "packaged_engine_sha256": "a4e7398f227da20131e2c66530cc2c902c2107bf8056172569bb3ac18b3a8296",
   "byte_identical_files": {},
   "unchanged_function_and_class_sha256": {
     "_frame_to_data_url": "f79ab4291669a76690df33e214e8964b65d5d94640c6b7a0b80dc88d55a97e74",
@@ -20,19 +20,19 @@
     },
     "resolve_backend": {
       "source_sha256": "4bd2410f10b8202a34867ae60aa3cc10713b205a340edff8740211c541363b07",
-      "packaged_sha256": "947b65d22f82149830f873ad58763da4362d499f834dd08984f558b4fcb3c136"
+      "packaged_sha256": "139468108548210b092f2548170ecc8a7d23b0f5fc9e84df3c7a4adc1c548efe"
     },
     "run_batch": {
       "source_sha256": "b29d463d168abdd1dd65ba8717184bce5499c2a425fb83980eabdc5f7b60888e",
-      "packaged_sha256": "63cc49c4ea75586bc401155c7c1797f45de9162ad9af4442776c29cee3b40365"
+      "packaged_sha256": "b6b39fac2efc2500a985bf350dd78236f771da4df8db97b59f223e126bd2c9d2"
     },
     "main": {
       "source_sha256": "dcd4c95f4177cec47e9d522c11eb2087d3cfec78f6adf6cc86bba053aeb4e85a",
-      "packaged_sha256": "b239b700cbc107fbb67d40f85f7a91eb9703c58d16e1b50ddbea9a8824a2efe9"
+      "packaged_sha256": "71c5575b593139adbd90b01f2f14b13a15e43e035249f325f60999f9ccc39073"
     },
     "_read_api_key": {
       "source_sha256": "d2c557fb2688d74bd6c77527dd314aecbd8253bf9b58cb293bdf7dda5731b1b7",
-      "packaged_sha256": "e78c7cee8e637fcceff257cce71ed215de9dcf768a0d857def788781a1d4654d"
+      "packaged_sha256": "7e94923f66e1de7924f1837059dd9f33032eca8d930d08ad26602cb44280e218"
     },
     "_already_done": {
       "source_sha256": "411fb10d74a3770307d742620f0ea287128d1674c18a341462fc5e505c9a5da3",
@@ -84,5 +84,9 @@
     "previous_packaged_engine_sha256": "a0001e6e2391c9980d3498090c98c617fd7977e6bf65c2df922ef554779eddb5",
     "reasoning_effort": "high",
     "scope": "All single and batch judge calls require high reasoning; CLI and programmatic overrides are rejected. Rubric and scoring are unchanged."
+  },
+  "dotenv_credentials_update": {
+    "previous_packaged_engine_sha256": "dee73ed486a1990747d2d4751dcc1e04da665b173b0f22412f42a730abb55fc5",
+    "scope": "Credential loading only: explicit key file, exported OPENAI_API_KEY, repository .env, then legacy openai_key.txt. Judge requests, rubric, and scoring are unchanged."
   }
 }
