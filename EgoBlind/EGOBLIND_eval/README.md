@@ -8,10 +8,10 @@ explanations, which are saved as JSONL verdicts.
 ## Installation
 
 The historical filename `vlm_judge_openrouter.py` is retained, but this package
-calls OpenAI directly with `high` reasoning by default. It uses the EgoBlind rubric
-and dataset adapter. The archived [training Judge 3](../../VISTA_training/README.md)
-is a separate VISTA evaluation path using OpenRouter and `high` reasoning by
-default. Its archived campaign scores were produced with `medium` reasoning.
+calls OpenAI directly with reasoning effort fixed to `high`. It uses the EgoBlind
+rubric and dataset adapter. [The training evaluator](../../VISTA_training/README.md)
+reuses the VISTA paper prompt and parser through OpenRouter with the same `high`
+reasoning requirement.
 
 Use Python 3.10 or later and an OpenAI API key with access to `gpt-6-luna`.
 Video decoding runs locally on the CPU; judging is performed through the API.
@@ -191,7 +191,7 @@ to the Python script.
 | `--judge-prompt` | `v5` | Only supported scoring protocol; this optional flag is available only for `run` |
 | `--num-frames` | `8` | Number of requested video frames per item |
 | `--concurrency` | `8` | Number of concurrent evaluation workers |
-| `--reasoning-effort` | `high` | Reasoning effort: `none`, `low`, `medium`, or `high` |
+| `--reasoning-effort` | `high` | Fixed to `high`; other values are rejected |
 | `--max-output-tokens` | `4096` | Completion-token limit, including reasoning tokens |
 | `--api-key-file` | `openai_key.txt` | Path to the API key file |
 

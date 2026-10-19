@@ -1,4 +1,4 @@
-"""Content identities and atomic output, shared by preparation and experiments."""
+"""File integrity, configuration identities, and atomic output utilities."""
 
 import hashlib
 import json

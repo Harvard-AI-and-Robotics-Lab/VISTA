@@ -107,8 +107,8 @@ class SensorConfig:
 class Experiment:
     model_id: str = "Qwen/Qwen3-VL-4B-Instruct"
     revision: str = ""  # immutable model commit, required for a new run
-    prepared: str = "/workspace/VISTA_data/prepared/v1"
-    output_dir: str = "/workspace/VISTA_data/runs/soft_mixture_full_seed17"
+    prepared: str = "data/prepared"
+    output_dir: str = "runs/default"
     sensor: dict = field(default_factory=dict)
     seed: int = 17
     train_mode: str = "full"  # full LLM, lora, or alignment-only
@@ -139,7 +139,6 @@ class Experiment:
     attention: str = "sdpa"
     gradient_checkpointing: bool = True
     sensor_warmup_steps: int = 0
-    grounded_prompt: bool = False
     internvl_detail_frames: list[int] = field(default_factory=list)
     lora_rank: int = 64
     lora_alpha: int = 128

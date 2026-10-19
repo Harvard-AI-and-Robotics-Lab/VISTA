@@ -31,7 +31,7 @@ python launch_rgb_slam.py --output_dir outputs/rgb8_slam8 --status
 python run_rgb_slam.py --dataset_root /path/to/VISTA/test --preflight_only
 ```
 
-The queue supports resumption, tracks workers, and validates prediction coverage. Outputs and logs are separate from RGB-only results. Never combine outputs generated with different code or decoding settings: use a new output directory for each protocol. This checkout uses the shared decoding settings in `models.py`; historical runs from the older local checkout used greedy decoding and are a different experiment.
+The queue supports resumption, tracks workers, and validates prediction coverage. Outputs and logs are separate from RGB-only results. Never combine outputs generated with different code or decoding settings: use a new output directory for each protocol. This checkout uses greedy decoding and a 4096-token output cap from `models.py`.
 
 ## LLaVA zero-shot input correction
 

@@ -1,11 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-# Adapted from Nokia Bell Labs PRIMUS; see licenses/PRIMUS-Clear-BSD.txt.
-"""Checkpoint-compatible PRIMUS multihead IMU encoder without Lightning plumbing.
+# Adapted from Nokia Bell Labs PRIMUS; see LICENSES.txt.
+"""PRIMUS multimodal IMU encoder with checkpoint-compatible tensor layouts.
 
-The upstream GRU receives [batch, 32, 32] directly. Preserve that layout: its
-hidden state represents a whole window, not a sequence of timestamped GRU tokens.
-Only the multimodal head is used; the asset converter explicitly removes ssl_head.
-"""
+The GRU receives tensors shaped [batch, 32, 32], producing a representation of
+an entire IMU window. The encoder uses the multimodal head; checkpoint conversion
+excludes the self-supervised head."""
 
 from torch import nn
 

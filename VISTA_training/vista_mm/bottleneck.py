@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PyTorch adaptation of Scenic MBT's synchronous bottleneck exchange.
+"""Synchronous multimodal bottleneck exchange with validity-aware routing.
 
-Source: scenic/projects/mbt/model.py, Encoder's use_bottleneck branch, at
-a179cefc7fd0a48676c15aa45b31c469e0dfc07d. VISTA changes: sensor tokens instead of
-RGB/spectrogram patches, validity masks, and a gated convex update with an identity
-fallback. The uniform variant recovers MBT's mean update for available streams.
-See FUSION_DESIGN.md and licenses/Scenic-APACHE-2.0.txt.
-"""
+Each sensor stream exchanges information through shared bottleneck states.
+Routing weights combine modality updates with an identity fallback. The uniform
+routing mode averages the available streams.
+
+Based on Scenic's Multimodal Bottleneck Transformer (MBT). See LICENSES.txt for
+upstream attribution and license terms."""
 
 import torch
 from torch import nn

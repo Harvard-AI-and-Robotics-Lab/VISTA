@@ -1,4 +1,6 @@
-Upstream notices for the runtime components used by the five no-audio models.
+Third-Party Licenses and Notices
+
+The following notices apply to the upstream components used by VISTA.
 
 PRIMUS-Clear-BSD.txt
 ====================

@@ -6,10 +6,10 @@ answers, and a candidate model's prediction. It returns scores and supporting
 explanations, which are saved as JSONL verdicts.
 
 The historical filename `vlm_judge_openrouter.py` is retained, but this standalone
-package calls OpenAI directly. Its default reasoning effort is `high`. The archived
-[training Judge 3](../VISTA_training/README.md#inference-and-judging) uses OpenRouter
-with `high` reasoning and separate provenance checks. Its archived campaign
-scores were produced with `medium` reasoning.
+package calls OpenAI directly with reasoning effort fixed to `high`.
+[The training evaluator](../VISTA_training/README.md#test-prediction-and-judging)
+reuses this prompt builder, verdict parser, and image encoding through OpenRouter,
+with the same `high` reasoning requirement and additional provenance checks.
 
 ## Installation
 
@@ -179,7 +179,7 @@ to the Python script.
 | `--judge-prompt` | `v5` | Only supported scoring protocol; this optional flag is available only for `run` |
 | `--num-frames` | `8` | Number of requested video frames per item |
 | `--concurrency` | `8` | Number of concurrent evaluation workers |
-| `--reasoning-effort` | `high` | Reasoning effort: `none`, `low`, `medium`, or `high` |
+| `--reasoning-effort` | `high` | Fixed to `high`; other values are rejected |
 | `--max-output-tokens` | `4096` | Completion-token limit, including reasoning tokens |
 | `--api-key-file` | `openai_key.txt` | Path to the API key file |
 

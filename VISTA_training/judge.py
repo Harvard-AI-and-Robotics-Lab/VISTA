@@ -9,9 +9,9 @@ from pathlib import Path
 from vista_mm.config import Experiment
 from vista_mm.data import VistaDataset
 from vista_mm.evaluate import task_group
-from vista_mm.judge3 import Judge3Rubric
+from vista_mm.judge3 import Judge3Rubric, PAPER_ENGINE_PATH, PAPER_DATASET_PATH
 from vista_mm.judge_profile import load_profile, request_settings
-from vista_mm.openrouter_judge import Client, image_content, read_keys
+from vista_mm.openrouter_judge import Client, read_keys
 from vista_mm.provenance import atomic_json, digest, read_jsonl, sha256
 
 
@@ -23,7 +23,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--predictions", required=True)
-    parser.add_argument("--split", default="val")
+    parser.add_argument("--csv", help="Original test annotation CSV for the paper judge")
+    parser.add_argument("--split", choices=["test"], default="test")
     parser.add_argument("--rubric", required=True)
     parser.add_argument("--judge-profile", required=True)
     parser.add_argument("--output-dir", required=True)
@@ -86,6 +87,21 @@ def main():
     predictions = {r["item_id"]: r for r in rows}
     if len(rows) != len(expected) or set(predictions) != set(expected):
         raise ValueError("Incomplete or duplicate predictions")
+    if args.csv:
+        annotation_csv = Path(args.csv).resolve()
+    else:
+        data_root = Path(dataset.manifest["dataset_root"])
+        annotation_csv = next(
+            (p for p in (data_root / f"{args.split}.csv",
+                         data_root / args.split / f"{args.split}.csv") if p.is_file()),
+            data_root / f"{args.split}.csv",
+        )
+    if sha256(annotation_csv) != dataset.manifest["annotation_sha256"][args.split]:
+        raise ValueError("Annotation CSV differs from the prepared dataset")
+    paper_items = rubric.load_items(annotation_csv, pred_path)
+    if len(paper_items) != len(expected) or {r["item_id"] for r in paper_items} != set(expected):
+        raise ValueError("Paper adapter and prepared split contain different tasks")
+    prepared_indices = {item["item_id"]: i for i, item in enumerate(dataset.items)}
     complete = json.loads(pred_path.with_suffix(".complete.json").read_text())
     original = json.loads(pred_path.with_suffix(".protocol.json").read_text())
     model_label = args.model_label or (
@@ -116,8 +132,14 @@ def main():
         "num_frames": 8,
         "min_pixels": config.min_pixels,
         "max_pixels": config.max_pixels,
-        "image_encoding": "jpeg-quality90-maxside768",
-        "scope": f"Fresh judge3 scoring of one completed {model_label} prediction set; no comparison baseline.",
+        "image_encoding": "jpeg-quality85-native-resolution",
+        "frame_sampling": "same eight prepared frame indices as the evaluated model",
+        "annotation_sha256": sha256(annotation_csv),
+        "paper_engine_sha256": sha256(PAPER_ENGINE_PATH),
+        "paper_dataset_sha256": sha256(PAPER_DATASET_PATH),
+        "judging_policy": "one_verdict_no_format_corrections",
+        "format_correction_retries": 0,
+        "scope": f"Paper VISTA_eval prompt and parser for one completed {model_label} prediction set.",
     }
     protocol_path = root / "protocol.json"
     if protocol_path.exists():
@@ -130,7 +152,7 @@ def main():
     client = Client(read_keys(args.key_files), args.max_cost_usd, root / "usage.jsonl")
 
     def judge(index):
-        item = dataset.items[index]
+        item = paper_items[index]
         folder = root / "new_model" / "items"
         folder.mkdir(parents=True, exist_ok=True)
         token = digest(item["item_id"])
@@ -139,18 +161,21 @@ def main():
             result = json.loads(saved.read_text())
             if result["protocol_identity"] != identity:
                 raise ValueError("Saved verdict protocol mismatch")
-            parsed = rubric.parse(result["raw_output"])
+            try:
+                parsed = rubric.parse(result["raw_output"])
+            except Exception as exc:
+                parsed = {"parse_error": True, "score": None, "exception": str(exc)}
             if any(result[k] != v for k, v in parsed.items()):
                 raise ValueError("Saved verdict differs from raw response")
             return result
-        example = dataset[index]
+        example = dataset[prepared_indices[item["item_id"]]]
         payload = {
             **request_settings(profile),
             "messages": [
                 {"role": "system", "content": rubric.contract["system"]},
                 {
                     "role": "user",
-                    "content": image_content(example["frames"])
+                    "content": rubric.image_content(example["frames"])
                     + [
                         {
                             "type": "text",
@@ -162,68 +187,37 @@ def main():
                 },
             ],
         }
-        for attempt in range(1, 5):
-            response_path = folder / f"{token}.attempt{attempt}.response.json"
-            if response_path.exists():
-                response = json.loads(response_path.read_text())
-            else:
-                atomic_json(
-                    folder / f"{token}.attempt{attempt}.request.json",
-                    {"payload_sha256": digest(payload)},
-                )
-                response = client.complete(
-                    payload,
-                    index % max(1, len(client.keys)),
-                    f"new_model:{item['item_id']}:attempt{attempt}",
-                )
-                atomic_json(response_path, response)
-            choice = response.get("choices", [{}])[0]
-            if (
-                response.get("model") != profile["model"]
-                or choice.get("finish_reason") != "stop"
-            ):
-                raise ValueError(
-                    "Wrong model or incomplete response; inspect saved response"
-                )
-            raw = choice.get("message", {}).get("content")
-            try:
-                if not isinstance(raw, str):
-                    raise ValueError("Missing verdict text")
-                verdict = rubric.parse(raw)
-            except ValueError as exc:
-                if isinstance(raw, str):
-                    payload["messages"].append({"role": "assistant", "content": raw})
-                payload["messages"].append(
-                    {"role": "user", "content": rubric.formatting_feedback(str(exc))}
-                )
-                atomic_json(
-                    folder / f"{token}.attempt{attempt}.invalid.json",
-                    {"reason": str(exc)},
-                )
-                continue
-            result = {
-                **{
-                    k: item[k]
-                    for k in (
-                        "item_id",
-                        "clip_id",
-                        "task_type",
-                        "question",
-                        "references",
-                    )
-                },
-                **verdict,
-                "model_name": "new_model",
-                "raw_output": raw,
-                "protocol_identity": identity,
-                "request_id": response.get("id"),
-                "usage": response.get("usage"),
-                "provider": response.get("provider"),
-                "attempt": attempt,
-            }
-            atomic_json(saved, result)
-            return result
-        raise ValueError(f"No valid verdict after four attempts: {item['item_id']}")
+        response_path = folder / f"{token}.response.json"
+        if response_path.exists():
+            response = json.loads(response_path.read_text())
+        else:
+            atomic_json(folder / f"{token}.request.json", {"payload_sha256": digest(payload)})
+            response = client.complete(
+                payload,
+                index % max(1, len(client.keys)),
+                f"new_model:{item['item_id']}:single_verdict",
+            )
+            atomic_json(response_path, response)
+        if response.get("model") != profile["model"]:
+            raise ValueError("Wrong judge model; inspect saved response")
+        raw = response.get("choices", [{}])[0].get("message", {}).get("content")
+        try:
+            verdict = rubric.parse(raw)
+        except Exception as exc:
+            verdict = {"parse_error": True, "score": None, "exception": str(exc)}
+        result = {
+            **{k: item[k] for k in ("item_id", "clip_id", "task_type", "question", "references")},
+            **verdict,
+            "model_name": "new_model",
+            "raw_output": raw,
+            "protocol_identity": identity,
+            "request_id": response.get("id"),
+            "usage": response.get("usage"),
+            "provider": response.get("provider"),
+            "attempt": 1,
+        }
+        atomic_json(saved, result)
+        return result
 
     started = time.monotonic()
     results = {}
@@ -286,7 +280,7 @@ def main():
             "protocol_identity": identity,
         },
     )
-    scores = list(results.values())
+    scores = [row for row in results.values() if not row.get("parse_error") and row.get("score") is not None]
     by_group = {}
     for row in scores:
         by_group.setdefault(task_group(row["task_type"]), []).append(row)
@@ -296,13 +290,15 @@ def main():
         "split": args.split,
         "rubric": Path(args.rubric).name,
         "protocol_identity": identity,
-        "items": len(scores),
+        "items": len(results),
+        "scored_items": len(scores),
+        "failed_items": len(results) - len(scores),
         "cost_usd": client.spent,
         "elapsed_seconds": time.monotonic() - started,
         "overall": {
             "score": mean([r["score"] for r in scores]),
             "meaningfully_correct_percent": 100
-            * mean([r["meaningfully_correct"] for r in scores]),
+            * mean([r["meaningfully_correct"] for r in scores]) if scores else None,
         },
         "by_group": {
             g: {
@@ -314,7 +310,7 @@ def main():
             for g, v in sorted(by_group.items())
         },
         "limitations": [
-            "Single-model Judge 3 scoring; no matched baseline comparison in this run."
+            "Paper VISTA_eval single-verdict scoring; malformed verdicts are logged and excluded without correction requests."
         ],
     }
     atomic_json(root / "summary.json", summary)
@@ -322,12 +318,15 @@ def main():
         root / "progress.json",
         {
             "status": "complete",
-            "completed": len(scores),
+            "completed": len(results),
+            "scored": len(scores),
+            "failed": len(results) - len(scores),
             "total": len(dataset),
             "cost_usd": client.spent,
         },
     )
     print(json.dumps(summary), flush=True)
+    lock.close()
 
 
 if __name__ == "__main__":

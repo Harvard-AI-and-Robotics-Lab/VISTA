@@ -1,8 +1,7 @@
-"""VISTA sensor slots for the native Transformers InternVL3 implementation.
+"""Sensor-token integration for the Transformers InternVL3 implementation.
 
-Keep InternVL's image/video embedding and cached decoding paths intact. Only
-dedicated sensor token embeddings are replaced, before native visual injection.
-"""
+Dedicated sensor embeddings are inserted before visual embedding injection.
+Native image processing and cached generation use the backbone's implementation."""
 
 import torch
 import torch.nn.functional as F

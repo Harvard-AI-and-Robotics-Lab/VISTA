@@ -1,8 +1,7 @@
-"""Explicit local checkpoint conversion and verified pretrained initialization.
+"""Convert pretrained sensor checkpoints and initialize verified encoder assets.
 
-The conversion command is separate from preparation/training and never downloads.
-Only tensor-safe torch.load is allowed; unsupported pickle globals fail closed.
-"""
+Checkpoint conversion uses tensor-only loading and writes validated weights for
+training and inference."""
 
 import argparse
 import json

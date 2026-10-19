@@ -1,8 +1,7 @@
-"""Versioned features from actual VISTA CSV schemas; all times use device seconds.
+"""Sensor feature aggregation using device timestamps and validity masks.
 
-Values, per-channel validity and per-time quality travel together. Never interpolate
-across an unobserved gap or infer sensor timestamps from video duration alone.
-"""
+Values, per-channel validity, and temporal quality are tracked together. Missing
+observations remain masked during interpolation and aggregation."""
 
 import json
 from pathlib import Path
@@ -124,25 +123,11 @@ def read_rgb(video, indices, expected_count):
             raise ValueError(
                 f"Video/clock frame mismatch for {video}: {count} != {expected_count}"
             )
-        frames = []
-        for idx in indices:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-            ok, frame = cap.read()
-            if not ok:
-                break
-            frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        if len(frames) == len(indices):
-            return np.stack(frames)
-    finally:
-        cap.release()
-
-    # Some H.264 streams decode correctly but cannot seek to their last frame.
-    # Decode from the start and retrieve the exact original indices; never
-    # substitute neighboring frames or change the prepared timestamps.
-    cap = cv2.VideoCapture(str(video))
-    wanted = set(indices)
-    selected = {}
-    try:
+        # Seeking can report success yet return an early frame repeatedly on
+        # some OpenCV/FFmpeg builds. Decode from frame zero to preserve the
+        # prepared frame indices, including duplicates and caller ordering.
+        wanted = set(indices)
+        selected = {}
         for idx in range(max(indices) + 1):
             if not cap.grab():
                 raise ValueError(f"Cannot sequentially decode {video} frame {idx}")

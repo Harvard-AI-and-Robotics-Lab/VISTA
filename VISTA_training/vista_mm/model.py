@@ -1,9 +1,7 @@
-"""Qwen3-VL integration that retains native video tokens, mRoPE and DeepStack.
+"""Sensor-token integration for Qwen3-VL.
 
-A scoped embedding hook replaces only dedicated sensor slots. input_ids still go
-through upstream forward/generation, so video positions never need reimplementation.
-Pinned to the inspected Transformers 4.57.6 implementation; eager execution only.
-"""
+A scoped embedding hook replaces dedicated sensor slots while preserving native
+video embeddings, mRoPE, DeepStack, and cached generation."""
 
 import torch
 import torch.nn.functional as F

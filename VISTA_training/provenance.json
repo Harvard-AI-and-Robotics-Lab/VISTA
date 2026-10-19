@@ -1,88 +1,86 @@
 {
-  "archive_repository": "bmrayan/vista-experiment-archive",
-  "archive_commit": "f65f12a7321af59a0da5db1e6f1d215aeb72765c",
   "runtime_hashes": {
     "native": {
-      "vista_mm/__init__.py": "57a15408d3d4075905afd59ed75d2005e026e5f9d2da96fa96448c974482b775",
-      "vista_mm/bottleneck.py": "f2584998b24cfb96e9b12b89e2a1665d2f6bfb72ac95c609bdf01aa3d28b4d3c",
-      "vista_mm/config.py": "690698b5445d50e5cf35ee849e6be68ac232fdb6bfd3bc804ad47c8a687249e4",
-      "vista_mm/data.py": "a6b8d7474c6b8f68596adbd4a3e2b40a16d884ebda69ce2ca1680a9c65640d6b",
-      "vista_mm/encoder_assets.py": "d04d12d8a375463814f936abc8d86fbf45115c6d1bcc712a89d498d177ca4096",
-      "vista_mm/encoders.py": "11c2bac203ab78194aae9a1f0f6eee7cc6194bfd2fdb8a1aebd86873c60ebfc0",
-      "vista_mm/evaluate.py": "8061ddbd575184580511fbaf28b68570eb3f600864eedbb1377b05ce11bc552a",
-      "vista_mm/features.py": "d4ff630590389d168a56f2e0a2b99ce34975200eb2a9f379c50becd3afc6be0d",
-      "vista_mm/fusion.py": "f20a77fa52db03af94d5fa7673d37a75685aabd1755ba35f5753000964f89fae",
+      "vista_mm/__init__.py": "574fd27cd3769e2aed0a31c741d632b2ef0c41e0604b94c9c804a1efaa6b3989",
+      "vista_mm/bottleneck.py": "5ffe30904a4200139b19c878be3b70405339dddd0bd7b7a5218970b6560217e9",
+      "vista_mm/config.py": "47bf7ce62734444238cb4389f21d167d095eb21c60053bf34a95911e10e6f34a",
+      "vista_mm/data.py": "3b1c198876616e4acb0168b02dd8d021652a430f68850e5ce276ada8a6174406",
+      "vista_mm/encoder_assets.py": "58fb0c049f641e1f022907d177cb1c61d91baaaf6e5de472822ea5d044fbae6f",
+      "vista_mm/encoders.py": "8583ce57d347e05f071b1ca99b038843d3b7548a04d80277ddfdbbf0058bbda8",
+      "vista_mm/evaluate.py": "b19bdc99fd5b1de71c9e296e657fbf1666988a1467ec1f4c8c8000423a987cc8",
+      "vista_mm/features.py": "46c8d8ec7cf217cc55eea37a7781611088bb1dc44e833f50867a1cfa7cb4d9b0",
+      "vista_mm/fusion.py": "d054ad2f4f83beaf67642ec476e5400a55afef46ee8fab774164e8d3b5dd4553",
       "vista_mm/gemma_model.py": "5eb1442e400daf7b633b64c468952e3218f5b8c4b3cc9cea0dff5bcb02f61f3d",
-      "vista_mm/internvl_model.py": "bc6a6b0caae65e50db534cdbca23829980f2859adf869050fdf9989a53edfada",
-      "vista_mm/judge3.py": "1316696f8075059e1e4f63a31b6012e8c1b97e15aea77719ba16e451e6e58b37",
-      "vista_mm/judge_profile.py": "e050fe9a42a9bf68f7251d2aa4477397cd7bd35de5f9a7e2c86b417b44c09caf",
-      "vista_mm/judge_rubric.py": "997d9432e6b2ef9ef8889501c90aadd6e63e9cb2993c1a69219908c2e2f91002",
+      "vista_mm/internvl_model.py": "2fd4f5de44401bb091033d69dcf4ba036ddd14d95fbd6b1c6dfcdb914eecc99f",
+      "vista_mm/judge3.py": "708d7f08c5519602e2a0d0ac9a4e2bdd7c82c62edffd42639593857871c52884",
+      "vista_mm/judge_profile.py": "c22cd1e7aab963c05b2e51862f97e06b4d3993a733250bcfb792a32fdfc49145",
+      "vista_mm/judge_rubric.py": "9a0579a0504323ed88a32f59bbd01453b939d77b02ac741e5e7199dacdc189c3",
       "vista_mm/lora.py": "4f4d0cbbf22a729c488319c6ac953e86a41a34fd376735f03fb3af8fb0a9d0b9",
       "vista_mm/loss.py": "38a38ead47851ba4d317aae0b82c16aa5c7e13f45be09ad0edb17cc072168992",
-      "vista_mm/manifest.py": "24afc5bc62492d602ecf9642f5509f927497315c5c465d7b393dd3c44d0e9ae2",
+      "vista_mm/manifest.py": "52289be042132ceb58217254d45f24b0b4ba1c8cb2682adddf90f7a572ba2c8d",
       "vista_mm/metrics.py": "c8fa76c4d7c12858ce260fc8791b5e601eed6db48ce390cecf986289b045db6c",
-      "vista_mm/model.py": "7b48031f1a8ef764c331101c55a23952350b6f43e944c893381aaa8196f08f04",
+      "vista_mm/model.py": "12d47a2c3acda59b0d8012dda9e754a6d8cf378950e36c0e066dc5bb5aff1a82",
       "vista_mm/native_features.py": "9026c63a8efb1ee08ff70c7b7dbc37afbcb6adcd2dd1fb62b703e490238331d7",
-      "vista_mm/openrouter_judge.py": "27eabc1c82aa0414c4706138a3cae24ca1de1e1c871158cace8b5d825d2c6974",
-      "vista_mm/predict.py": "d65bdc05635e208e157292d077debfc10880658ffb4a220822b5cc76a4965c72",
-      "vista_mm/primus.py": "b55b8e3622072ddd41ce5c2077f15c0e02c86d22f11b9dc888ce9c4636c7c65f",
-      "vista_mm/provenance.py": "cd0024a1d28dc5ed2fce70d24969c0436b4bd527ecc9713f8e60bcfb94c68e2b",
-      "vista_mm/train.py": "f3b5138c734cc845230eed3452c7f3b9209eeaca69cb5969ab7b1e5e9acf7d4b"
+      "vista_mm/openrouter_judge.py": "86fbf6b965949e5e336142da7cf270bb067ec8f47c9c8eb2640a67a981cae218",
+      "vista_mm/predict.py": "2195c7a46a949aeb2dbf6bb8fd42ec3a4ea11e19d9ca3e944882dd5ab779d56a",
+      "vista_mm/primus.py": "b1cdbd871aa787077827684467334e42c08d00dea0c628881eff5975b2919cbc",
+      "vista_mm/provenance.py": "32e5adc71d14d4c476f063485762a6ae62cee08e624113b0b140be9dbc8d9106",
+      "vista_mm/train.py": "fe19566b8a352af5286ae2333f807ac47eaf937b3520657dfd2939f4d8c29260"
     },
     "qwen": {
-      "vista_mm/__init__.py": "57a15408d3d4075905afd59ed75d2005e026e5f9d2da96fa96448c974482b775",
+      "vista_mm/__init__.py": "574fd27cd3769e2aed0a31c741d632b2ef0c41e0604b94c9c804a1efaa6b3989",
       "vista_mm/attention.py": "3169435c26191f69cfeb4a67b5bc29899218671122a2e7f71c69705d2f542df9",
-      "vista_mm/bottleneck.py": "f2584998b24cfb96e9b12b89e2a1665d2f6bfb72ac95c609bdf01aa3d28b4d3c",
-      "vista_mm/config.py": "533e560db28ab5762aa4c81bd82d29a6346b92c4c24448a53804fd6ffdac87d1",
-      "vista_mm/data.py": "d8a180f7e80d77cd8f9aad47418b98d63b0af6a0411802cf21c4a8c94378ab42",
-      "vista_mm/encoder_assets.py": "d04d12d8a375463814f936abc8d86fbf45115c6d1bcc712a89d498d177ca4096",
-      "vista_mm/encoders.py": "11c2bac203ab78194aae9a1f0f6eee7cc6194bfd2fdb8a1aebd86873c60ebfc0",
-      "vista_mm/evaluate.py": "8061ddbd575184580511fbaf28b68570eb3f600864eedbb1377b05ce11bc552a",
-      "vista_mm/features.py": "aafadcf54ca07cefc07cc50a4740b4e5b7d42230eb200b35e71c992d3862b75c",
-      "vista_mm/fusion.py": "f20a77fa52db03af94d5fa7673d37a75685aabd1755ba35f5753000964f89fae",
+      "vista_mm/bottleneck.py": "5ffe30904a4200139b19c878be3b70405339dddd0bd7b7a5218970b6560217e9",
+      "vista_mm/config.py": "e32b1c067e537372b2e8fbf29cc7743f1b5c8d88723567f164cbcf4a5dfb4d5b",
+      "vista_mm/data.py": "f72b240f6d2e4805cc1e780b6088a9bbc1fe4f9c767be1c0ba216bf62972c75f",
+      "vista_mm/encoder_assets.py": "58fb0c049f641e1f022907d177cb1c61d91baaaf6e5de472822ea5d044fbae6f",
+      "vista_mm/encoders.py": "8583ce57d347e05f071b1ca99b038843d3b7548a04d80277ddfdbbf0058bbda8",
+      "vista_mm/evaluate.py": "b19bdc99fd5b1de71c9e296e657fbf1666988a1467ec1f4c8c8000423a987cc8",
+      "vista_mm/features.py": "46c8d8ec7cf217cc55eea37a7781611088bb1dc44e833f50867a1cfa7cb4d9b0",
+      "vista_mm/fusion.py": "d054ad2f4f83beaf67642ec476e5400a55afef46ee8fab774164e8d3b5dd4553",
       "vista_mm/gemma_model.py": "5eb1442e400daf7b633b64c468952e3218f5b8c4b3cc9cea0dff5bcb02f61f3d",
-      "vista_mm/internvl_model.py": "bc6a6b0caae65e50db534cdbca23829980f2859adf869050fdf9989a53edfada",
-      "vista_mm/judge3.py": "1316696f8075059e1e4f63a31b6012e8c1b97e15aea77719ba16e451e6e58b37",
-      "vista_mm/judge_profile.py": "e050fe9a42a9bf68f7251d2aa4477397cd7bd35de5f9a7e2c86b417b44c09caf",
-      "vista_mm/judge_rubric.py": "997d9432e6b2ef9ef8889501c90aadd6e63e9cb2993c1a69219908c2e2f91002",
+      "vista_mm/internvl_model.py": "2fd4f5de44401bb091033d69dcf4ba036ddd14d95fbd6b1c6dfcdb914eecc99f",
+      "vista_mm/judge3.py": "708d7f08c5519602e2a0d0ac9a4e2bdd7c82c62edffd42639593857871c52884",
+      "vista_mm/judge_profile.py": "c22cd1e7aab963c05b2e51862f97e06b4d3993a733250bcfb792a32fdfc49145",
+      "vista_mm/judge_rubric.py": "9a0579a0504323ed88a32f59bbd01453b939d77b02ac741e5e7199dacdc189c3",
       "vista_mm/lora.py": "4f4d0cbbf22a729c488319c6ac953e86a41a34fd376735f03fb3af8fb0a9d0b9",
       "vista_mm/loss.py": "38a38ead47851ba4d317aae0b82c16aa5c7e13f45be09ad0edb17cc072168992",
-      "vista_mm/manifest.py": "24afc5bc62492d602ecf9642f5509f927497315c5c465d7b393dd3c44d0e9ae2",
+      "vista_mm/manifest.py": "52289be042132ceb58217254d45f24b0b4ba1c8cb2682adddf90f7a572ba2c8d",
       "vista_mm/metrics.py": "c8fa76c4d7c12858ce260fc8791b5e601eed6db48ce390cecf986289b045db6c",
-      "vista_mm/model.py": "00d3582e2a2c64e85d983117394c4cca10376be432e1418180ec4f673040cd17",
+      "vista_mm/model.py": "966046e7e24224c93ac3500115f2feed4ba89027d789613f43597296ca42d317",
       "vista_mm/native_features.py": "9026c63a8efb1ee08ff70c7b7dbc37afbcb6adcd2dd1fb62b703e490238331d7",
-      "vista_mm/openrouter_judge.py": "27eabc1c82aa0414c4706138a3cae24ca1de1e1c871158cace8b5d825d2c6974",
-      "vista_mm/predict.py": "659db38e26a8de9c0a5c0b627fbdceec6733386841ccf82e8ff0861fda383fa0",
-      "vista_mm/primus.py": "b55b8e3622072ddd41ce5c2077f15c0e02c86d22f11b9dc888ce9c4636c7c65f",
-      "vista_mm/provenance.py": "cd0024a1d28dc5ed2fce70d24969c0436b4bd527ecc9713f8e60bcfb94c68e2b",
-      "vista_mm/train.py": "99b5af03acfee0d7cfeb0b2a78fc1e2e4fde52e8405e782dbcc3f75603d51900"
+      "vista_mm/openrouter_judge.py": "86fbf6b965949e5e336142da7cf270bb067ec8f47c9c8eb2640a67a981cae218",
+      "vista_mm/predict.py": "795ec4dc465c1398ce8f0845d960d9922866ea4a548673c36e0a261a17fd1ac5",
+      "vista_mm/primus.py": "b1cdbd871aa787077827684467334e42c08d00dea0c628881eff5975b2919cbc",
+      "vista_mm/provenance.py": "32e5adc71d14d4c476f063485762a6ae62cee08e624113b0b140be9dbc8d9106",
+      "vista_mm/train.py": "216ac490addda47f1f80845263049face991ff4271a75cdaa9fed8b5f79cffc3"
     }
   },
   "config_digests": {
     "internvl3_2b": {
-      "stage1": "5f7538b0541a2da5d147a29ad40c4e7cbc5734508de116684187bff1fdc075b7",
-      "stage2": "716bddd33d283062557156af230dfe96fa3fff91680038fe4acb0aac31716543",
-      "eval": "2c17c418cf7b24d5727ce90d9061b674871856f715c933d92178abf4af07430c"
+      "stage1": "fa3b9e0a51d71979b87092b447aa56025e9f63e72e9702edb036853182c5b558",
+      "stage2": "23c5c0f388efc5261f2fb44664916bc373099ec0cfafdb5c7339a0ea31027860",
+      "eval": "23c5c0f388efc5261f2fb44664916bc373099ec0cfafdb5c7339a0ea31027860"
     },
     "internvl3_8b": {
-      "stage1": "fdfe5891baaedc04c87f27b5cfd13db014124433693eb2e01689a6636d54204b",
-      "stage2": "017ba502d50faab3fb193b7c158ac4fbdc97186a4cdc5aec361c542053a6a6b4",
-      "eval": "bb8076b6c404edf03354e87deb1c704027adccb86f6ae91fb113da3241f7326c"
+      "stage1": "fef82e5521b2b9b3cc2d57729457fb6ef20859aa8ad75e3f37803c47a7fa8901",
+      "stage2": "1b4e076a94b422b072e9d0f0253f417a3089b16518263aa5e3373352c5466718",
+      "eval": "1b4e076a94b422b072e9d0f0253f417a3089b16518263aa5e3373352c5466718"
     },
     "qwen3_vl_4b": {
-      "stage1": "30f09db5cde538c2949f4e25c2f4ca580f2b5de0e97cef21b1f44cf3a1ab0f47",
-      "stage2": "9921d50221b69f90874705f9ede2f88a3235e0a967df5dc056b36ce761395cb9",
-      "eval": "9921d50221b69f90874705f9ede2f88a3235e0a967df5dc056b36ce761395cb9"
+      "stage1": "635ef09084ea22c85c9d90313d3c1d33ba8cc2a91a3bfe4b3fd50032b69f354a",
+      "stage2": "747adb180fce0ae70698414836a12470538df21d61218ae894583822655e4423",
+      "eval": "747adb180fce0ae70698414836a12470538df21d61218ae894583822655e4423"
     },
     "qwen3_vl_8b": {
-      "stage1": "227929c7bd5333f7a91035ecd6b6fc466239679ca0b1c2c7d20fe861d6ac0991",
-      "stage2": "5f7c13fc19c5ae13b85b08b87ff57c6748b11de044d01c5fe22cb18d9051b0df",
-      "eval": "5f7c13fc19c5ae13b85b08b87ff57c6748b11de044d01c5fe22cb18d9051b0df"
+      "stage1": "62f9b5262bfc8f88ed73a0911f1313216d98e9fe441620f07ca6138dbf0b43bc",
+      "stage2": "639badcff79743da3a7d51e20d1418d33a2641f7b759e65fec2e3e40d01e685b",
+      "eval": "639badcff79743da3a7d51e20d1418d33a2641f7b759e65fec2e3e40d01e685b"
     },
     "gemma3_12b": {
-      "stage1": "813538122799087c3cd99fe97ea547af255e1ba9e4c73e251b566f2d6c6151b5",
-      "stage2": "f32eb1a0f3f78845008361a98f91a054d38d1eb08bf700fc9b2c8c66b558df9e",
-      "eval": "a313e10c1ef7267ed40fc92f5df01897313146b41e00ff0e630ec39c81c4961f"
+      "stage1": "637c347f1c482c5eda4e72f4ebcde82d583ba2876718647dbda182ce99d3bdca",
+      "stage2": "db905810bc22b5973658d884191a7a13d7168e611e3d78a70e81cd4e4b7bed9a",
+      "eval": "db905810bc22b5973658d884191a7a13d7168e611e3d78a70e81cd4e4b7bed9a"
     }
   },
   "omitted_runtime_paths": [
@@ -92,66 +90,40 @@
     "vista_mm/third_party/beats/backbone.py",
     "vista_mm/third_party/beats/modules.py"
   ],
-  "method": "seed17-no-audio-question-reliability-bottleneck-readout-warmup",
-  "judge_sha256": "dd663f322430bac4671b2f5a1be8861be1910ba7f3161349e5b093b75a0f12ff",
-  "rubric_sha256": "174cb5c2e5c1170ae0931dd3d8d693ed59f0b4ac2c06cfc9638bea7364bbbe9f",
-  "qwen_patch_sha256": "343d943749e9610ecfc36360f4591c7ee9daf47a46086d6df0e645ad92add697",
-  "models_sha256": "85285d450ea445d47cd8491b713227213f21a81f606255a2ede4cc3b5e53c225",
-  "judge_profile_update": {
-    "previous_models_sha256": "3779ce7f385bbcd80e10bd7010bac27f8133e046686ed582941663c67fa309f7",
-    "previous_reasoning_effort": "medium",
+  "method": "question-conditioned-sensor-fusion-with-lora",
+  "judge_sha256": "af0430c310134f5b7a8e99b450d2cf35abf7e92058a0abc3f0606116fda89734",
+  "rubric_sha256": "abc7445e36ce18be8dccd2b233a2b6401a0e2b4ca2c607063962afac908624af",
+  "qwen_patch_sha256": "962fdf9d1cedfe66c7cfc52782a99b02a15072fb14cf0691505da1813ad81132",
+  "models_sha256": "c20f618cee7fd2c0cc9ba4866e371d2e96f004330722be9efe9a60b41adfe976",
+  "judge": {
+    "model": "openai/gpt-6-luna",
     "reasoning_effort": "high",
-    "scope": "Judge requests only; all fifteen archived training/eval configs and checkpoint hashes are unchanged. Recorded campaign scores used medium reasoning."
+    "temperature": 1,
+    "provider": "openai",
+    "allow_fallbacks": false,
+    "prompt_source": "Appendix B.4",
+    "paper_sha256": "48839d734cce1aafb3b16bae6e6dc6af4d35dd52cd5672c19465b7ed7dab27b6",
+    "canonical_engine": "VISTA_eval/vlm_judge_openrouter.py",
+    "canonical_engine_sha256": "dee73ed486a1990747d2d4751dcc1e04da665b173b0f22412f42a730abb55fc5",
+    "canonical_dataset": "VISTA_eval/dataset_vista.py",
+    "canonical_dataset_sha256": "4c6db13e96d98f08067342c94856e88ad0f46570756aa1f127b094d9e6fdfe4f",
+    "format_correction_retries": 0,
+    "num_frames": 8,
+    "image_encoding": "jpeg-quality85-native-resolution",
+    "evaluation_split": "test",
+    "canonical_rubric": "VISTA_eval/prompts/assistancevlmjudge_vista.json",
+    "canonical_rubric_sha256": "abc7445e36ce18be8dccd2b233a2b6401a0e2b4ca2c607063962afac908624af"
   },
-  "runtime_cleanup": {
-    "date": "2026-10-12",
-    "previous_qwen_patch_sha256": "c6c848a3833b6c4364ca1aefe7776bb177285bf7f03227cacb9f2f879fd0628a",
-    "previous_runtime_hashes": {
-      "native": {
-        "vista_mm/evaluate.py": "e52d0b096e4d5e203b306373b3aa262a20630692918c0dd8176b2879d8bf2fdc",
-        "vista_mm/predict.py": "dfb54e41d2796a7023d733c280e03899f24d8bedded96bcee509a8754445784e"
-      },
-      "qwen": {
-        "vista_mm/evaluate.py": "e52d0b096e4d5e203b306373b3aa262a20630692918c0dd8176b2879d8bf2fdc",
-        "vista_mm/predict.py": "082a7a4c2dc94fbbcab8eb0ef4c98a5788d1337cf9627a540b32efccde3c3c54"
-      }
-    },
-    "scope": "Removed unused cluster_comparison and unsupported prediction --zero-shot path in both runtimes. Checkpoint inference is required. Qwen patch regenerated with context. Model calculations, all fifteen campaign configs, checkpoint hashes, and archived result records are unchanged."
-  },
-  "unused_preparation_cleanup": {
-    "previous_qwen_patch_sha256": "f52de3104742c13a1bef0f364af9302cb3c6b1473413760920462eb9d9f6c6ba",
-    "previous_runtime_hashes": {
-      "native": {
-        "vista_mm/features.py": "06455b2436bcdfbfc176df10b1c4af8b43b57123a6a02c2d898c89ea1aa7f1de",
-        "vista_mm/manifest.py": "e793bbb19169123da180ca2898f2cbd6719c23449fc1ac2dba1dadf4b8f7bfd7",
-        "vista_mm/native_features.py": "68ed77dfa85794fb4c8af2b5b9ff68436a4dd464e28b942fe8558d0e062c9ae7",
-        "vista_mm/provenance.py": "ec96d96f26607219c68051e527ca4490979e602b27266b25bdb63f50e6b88557"
-      },
-      "qwen": {
-        "vista_mm/features.py": "18c1fcadc857161bed1567b5a5302dbafb1033db17a5e39d7c7402cea2a0c6c8",
-        "vista_mm/manifest.py": "e793bbb19169123da180ca2898f2cbd6719c23449fc1ac2dba1dadf4b8f7bfd7",
-        "vista_mm/native_features.py": "68ed77dfa85794fb4c8af2b5b9ff68436a4dd464e28b942fe8558d0e062c9ae7",
-        "vista_mm/provenance.py": "ec96d96f26607219c68051e527ca4490979e602b27266b25bdb63f50e6b88557"
-      }
-    },
-    "removed_functions": {
-      "vista_mm/features.py": [
-        "source_hashes"
-      ],
-      "vista_mm/provenance.py": [
-        "write_jsonl"
-      ],
-      "vista_mm/manifest.py": [
-        "load_splits",
-        "make_item"
-      ],
-      "vista_mm/native_features.py": [
-        "window_starts",
-        "imu_windows",
-        "audio_windows",
-        "extract_native"
-      ]
-    },
-    "scope": "Removed disconnected raw-preparation helpers and unused JSONL writer from both runtimes. Retained SYSTEM, SCHEMA, NATIVE_SCHEMA, RECIPE, RGB decoder, and prepared-cache loading. All fifteen configs, checkpoint hashes, model calculations, and judge code are unchanged."
+  "inference": {
+    "do_sample": false,
+    "num_beams": 1,
+    "repetition_penalty": 1.0,
+    "max_new_tokens": 4096,
+    "prompts": "VISTA_benchmark/prompts.py",
+    "prompts_sha256": "24d1779a7975ee429f5d53115519932556928bf603a857cddb5c87f334b3a061",
+    "benchmark_models": "VISTA_benchmark/models.py",
+    "benchmark_models_sha256": "4396a21b7e64f9954cef3d40f532c30a98ece7af9b2660b96b5d7c3c83f5ea0d",
+    "system_message": false,
+    "num_frames": 8
   }
 }

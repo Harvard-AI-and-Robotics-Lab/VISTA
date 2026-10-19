@@ -1,4 +1,4 @@
-"""Deterministic complete-split prediction with identity-checked resume and no skipped failures."""
+"""Generate complete test predictions with configuration-checked resumption."""
 
 import argparse
 import json
@@ -14,6 +14,7 @@ from .encoder_assets import resolve_encoder_configuration
 from .provenance import atomic_json, digest, read_jsonl, sha256
 from .train import load_backbone
 from .metrics import RunMonitor, synchronize, prediction_fields, prediction_summary
+from .manifest import PROMPTS_PATH
 
 
 def move(value, device):
@@ -36,13 +37,13 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--config", required=True)
     p.add_argument("--checkpoint", required=True, help="Saved adapter directory")
-    p.add_argument("--split", choices=["val", "test"], default="val")
+    p.add_argument("--split", choices=["test"], default="test")
     p.add_argument("--output", required=True)
     p.add_argument("--ablate", nargs="*", default=[])
     p.add_argument("--shuffle-sensors", action="store_true")
     p.add_argument("--shuffle-preserve-availability", action="store_true")
     p.add_argument("--resume", action="store_true")
-    p.add_argument("--max-new-tokens", type=int, default=512)
+    p.add_argument("--max-new-tokens", type=int, choices=[4096], default=4096)
     p.add_argument("--num-shards", type=int, default=1)
     p.add_argument("--shard-index", type=int, default=0)
     args = p.parse_args()
@@ -69,7 +70,7 @@ def main():
     if not (checkpoint.parent / "experiment.json").exists():
         raise ValueError("Checkpoint must belong to a recorded VISTA run")
     trained = json.loads((checkpoint.parent / "experiment.json").read_text())
-    # Normalize newly introduced optional sensor fields for older checkpoints.
+    # Normalize optional sensor fields before comparing checkpoint metadata.
     trained["sensor"] = SensorConfig(**trained["sensor"]).to_dict()
     for key in (
         "model_id",
@@ -103,6 +104,8 @@ def main():
         "max_new_tokens": args.max_new_tokens,
         "do_sample": False,
         "num_beams": 1,
+        "repetition_penalty": 1.0,
+        "prompts_sha256": sha256(PROMPTS_PATH),
         "config": config.to_dict(),
         "implementation_sha256": {
             str(p.relative_to(Path(__file__).parent)): sha256(p)
@@ -158,6 +161,7 @@ def main():
                         **batch,
                         do_sample=False,
                         num_beams=1,
+                        repetition_penalty=1.0,
                         max_new_tokens=args.max_new_tokens,
                         use_cache=True,
                         pad_token_id=processor.tokenizer.pad_token_id,

@@ -218,16 +218,15 @@ the prediction count and error file instead of relying only on the exit code.
 
 ## Decoding and reproducibility
 
-Local model paths use sampling with temperature `0.7`, top-p `0.8`, repetition
-penalty `1.05`, and an output cap of `4096` tokens. The base seed defaults to `0`;
-each task gets a stable seed derived from its `clip_id|task_type` identity.
-These settings are configurable through `VISTA_TEMPERATURE`, `VISTA_TOP_P`,
-`VISTA_REPETITION_PENALTY`, `VISTA_SEED`, and `VISTA_SEED_MODE`.
+Local models use greedy decoding, one beam, repetition penalty `1.0`, and a
+maximum output length of `4096` tokens. vLLM uses temperature `0` for greedy
+selection. The adapted models in `VISTA_training` use the same task templates
+from `prompts.py` and the same decoding settings.
 
 `decoding_<model>.json` records the settings and prevents resuming with a different
-decoding protocol. `--num_frames` changes the requested frame count from the default
-of eight. Hosted backends have their own request settings and do not share the local
-per-item seed guarantee; record the provider and model ID with the paper's results.
+decoding protocol or task-template source. `--num_frames` changes the requested
+frame count from the default of eight. Hosted backends use their provider's
+generation interface; record the provider and model ID with the paper's results.
 
 ## RGB + SLAM ablation and LLaVA video input
 

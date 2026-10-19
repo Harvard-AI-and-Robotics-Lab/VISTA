@@ -18,6 +18,30 @@ from datasets import load_dataset
 ds = load_dataset("harvardairobotics/VISTA")
 ```
 
+### Quick Start
+
+Use `train.csv` for training and `test.csv` for evaluation. Each row represents
+one clip; media and sensor files are located using its `clip_id` under `train/`
+or `test/`. Individual clips can have additional audio and metadata files; some
+derived tracking files are missing, as documented in the dataset card.
+
+For an already downloaded dataset:
+
+```python
+import csv
+from pathlib import Path
+
+root = Path("/path/to/VISTA")
+with (root / "test.csv").open(encoding="utf-8-sig", newline="") as handle:
+    sample = next(csv.DictReader(handle))
+
+clip_id = sample["clip_id"]
+clip = root / "test" / clip_id.split("_")[0] / clip_id
+rgb_video = clip / f"{clip_id}.mp4"
+slam_left = clip / "vrs" / "slam_left.mp4"
+question_audio = clip / "generated-audio" / "q1.wav"
+```
+
 ## Zero-Shot Inference
 
 Install the [model dependencies](VISTA_benchmark/README.md#environment-setup), then run:

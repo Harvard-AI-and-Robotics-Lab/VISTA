@@ -1,9 +1,8 @@
-"""Question-conditioned soft sensor mixture with missing-data masks.
+"""Question-conditioned sensor fusion with temporal alignment and missing-data masks.
 
-Temporal adapters produce eight tokens per stream. The main fusion exchanges
-information through eight shared bottleneck states; a one-way cross-attention
-variant is retained as a control. Gates are trained by the supervised answer loss.
-"""
+Temporal adapters produce eight tokens per stream. Fusion supports shared
+bottleneck exchange and one-way cross-attention, with reliability gates learned
+through supervised answer loss."""
 
 import math
 

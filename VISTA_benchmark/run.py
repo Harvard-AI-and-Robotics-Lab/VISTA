@@ -184,9 +184,6 @@ def main():
                     current_frames,
                     prompt,
                     args.model,
-                    # Item identity, not the prompt: the same item must get the same seed in
-                    # every run and every ablation arm, and a different seed from other items.
-                    seed_key=f"{clip_id}|{task_type}",
                     **api_keys,
                 )
                 output_stream.write(json.dumps({

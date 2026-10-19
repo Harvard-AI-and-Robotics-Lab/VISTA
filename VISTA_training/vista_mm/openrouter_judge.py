@@ -1,7 +1,5 @@
-"""Resumable OpenRouter client and image encoding for Judge 3."""
+"""Resumable OpenRouter transport and usage accounting for the VISTA judge."""
 
-import base64
-import io
 import json
 import math
 import os
@@ -10,8 +8,6 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-
-from PIL import Image
 
 from .provenance import atomic_json, digest, read_jsonl
 
@@ -25,27 +21,6 @@ def read_keys(paths):
     ):
         raise ValueError("Key files must contain one OpenRouter API key each")
     return list(dict.fromkeys(keys))
-
-
-def image_content(frames, max_side=768):
-    result = []
-    for frame in frames:
-        if not isinstance(frame, Image.Image):
-            frame = Image.fromarray(frame)
-        image = frame.convert("RGB").copy()
-        image.thumbnail((max_side, max_side))
-        stream = io.BytesIO()
-        image.save(stream, format="JPEG", quality=90)
-        result.append(
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": "data:image/jpeg;base64,"
-                    + base64.b64encode(stream.getvalue()).decode(),
-                },
-            }
-        )
-    return result
 
 
 class Client:

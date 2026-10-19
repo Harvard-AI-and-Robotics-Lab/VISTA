@@ -13,93 +13,17 @@ import httpx
 import numpy as np
 import requests
 from PIL import Image
+from pathlib import Path
 
 
 MAX_OUTPUT_TOKENS = 4096
 
-# ---------------------------------------------------------------------------------------
-# DECODING PROTOCOL -- one rule for every benchmarked model, restated at every call site.
-#
-#   temperature = 0.7,  top_p = 0.8,  repetition_penalty = 1.05,
-#   seed = 0 PER ITEM (hashed with clip_id|task_type; see SEED_MODE),  max output tokens = 4096
-#
-# Restated everywhere because the defaults disagree, and inheriting them silently produced
-# three regimes inside one results table: vLLM's SamplingParams defaults to temperature=1.0 /
-# top_p=1.0 / top_k=0 unseeded AND overrides the model's own generation_config, while
-# transformers falls back to that config -- do_sample=True at 0.7/0.8 for VideoLLaMA3 and
-# Qwen3-VL, unset (so greedy) for InternVL3.
-#
-# Chosen by measurement, not by argument. Qwen3-VL degenerates into repetition loops that run
-# to the token cap, and the rate depends on temperature MONOTONICALLY in the unhelpful
-# direction -- lower temperature loops more (qwen3vl_4b, share of outputs at the cap):
-#
-#                        no context   full sensor context
-#   greedy                    --              23%
-#   T=0.7 p=0.8              9.6%             14.0%
-#   T=1.0 p=1.0              0.0%              5.5%
-#   T=0.7 p=0.8 rep=1.05     0.0%              1.0%   (and 0% of those are loops)
-#   T=0.7 p=0.8 rep=1.10     0.0%              0.0%
-#
-# So greedy is the worst option here, not the safe one, and no temperature alone fixes it on
-# the context-injected arms. The repetition penalty does. 1.05 is the weakest setting that
-# removes every loop, chosen over 1.10 because this task has legitimate repetition (naming the
-# same object across successive guidance steps) and the mildest sufficient intervention
-# distorts it least. The per-item seed is what makes sampling reproducible.
-# See VISTA_mm/docs/DECODING.md.
-# Overridable from the environment so the protocol can be swept without editing code -- the
-# repetition behaviour below had to be measured across several settings before one was chosen.
-TEMPERATURE = float(os.environ.get("VISTA_TEMPERATURE", "0.7"))
-TOP_P = float(os.environ.get("VISTA_TOP_P", "0.8"))
-SEED = int(os.environ.get("VISTA_SEED", "0"))
-# 1.05, the weakest setting measured to eliminate Qwen3-VL's repetition loops entirely.
-REPETITION_PENALTY = float(os.environ.get("VISTA_REPETITION_PENALTY", "1.05"))
-
-# SEED MODE -- how the base SEED becomes the seed an individual item is sampled with.
-#
-#   "item"   (default) seed = hash(SEED, clip_id|task_type). Reproducible, independent across
-#            items, and identical for the same item in every ablation arm, so arm deltas stay
-#            paired on common random numbers.
-#   "shared" every item sampled with SEED itself. This is what the first full campaign ran
-#            with; it is kept ONLY so those frozen results can be reproduced exactly.
-#
-# Why "shared" was wrong: reseeding every item to one value hands every item the same random
-# draws, so sampling decisions are coupled across the whole benchmark rather than independent.
-# A run can then land on one side of a model's output distribution everywhere at once.
-# Measured on VideoLLaMA3 (20 clips, 79 items, same prompts): refusals 62.0% with a shared seed
-# vs 20.3% with per-item seeds -- and 19.0% unseeded. The repetition penalty made no difference
-# (59.5% shared without it). See VISTA_mm/docs/DECODING.md.
-SEED_MODE = os.environ.get("VISTA_SEED_MODE", "item").strip().lower()
-if SEED_MODE not in ("item", "shared"):
-    raise ValueError(f"VISTA_SEED_MODE must be 'item' or 'shared', got {SEED_MODE!r}")
-
-_warned_no_key = False
-
-
-def item_seed(seed_key=None) -> int:
-    """The seed to sample one item with, under SEED_MODE.
-
-    hashlib, not hash(): Python's hash() of a str is salted per process, so it would give a
-    resumed run -- a new process -- different seeds for the same items.
-    """
-    global _warned_no_key
-    if SEED_MODE == "shared":
-        return SEED
-    if seed_key is None:
-        if not _warned_no_key:
-            import sys as _sys
-            print("[WARNING] run_model() called without seed_key under VISTA_SEED_MODE=item: "
-                  "falling back to one shared seed, which couples sampling across items. "
-                  "Pass seed_key=f'{clip_id}|{task_type}'.", file=_sys.stderr, flush=True)
-            _warned_no_key = True
-        return SEED
-    digest = hashlib.sha256(f"{SEED}|{seed_key}".encode("utf-8")).digest()
-    return int.from_bytes(digest[:4], "little") & 0x7FFFFFFF
-
 
 def decoding_signature() -> dict:
-    """Everything that determines what a model generates, as recorded next to its predictions."""
-    return {"temperature": TEMPERATURE, "top_p": TOP_P, "repetition_penalty": REPETITION_PENALTY,
-            "seed": SEED, "seed_mode": SEED_MODE, "max_output_tokens": MAX_OUTPUT_TOKENS}
+    """Fixed local inference protocol and shared task-template identity."""
+    return {"do_sample": False, "num_beams": 1, "repetition_penalty": 1.0,
+            "max_output_tokens": MAX_OUTPUT_TOKENS,
+            "prompts_sha256": hashlib.sha256(Path(__file__).with_name("prompts.py").read_bytes()).hexdigest()}
 
 
 def guard_decoding(out_dir: str, name: str, n_existing: int) -> None:
@@ -130,21 +54,6 @@ def guard_decoding(out_dir: str, name: str, n_existing: int) -> None:
         os.makedirs(out_dir, exist_ok=True)
         with open(path, "w") as f:
             json.dump(sig, f, indent=2)
-
-
-def _seed_torch(seed: int):
-    """Seed immediately before each generate() on the transformers paths.
-
-    Seeding once at startup would make every item's text depend on how many items ran before
-    it, so a resumed run -- which processes fewer -- would produce different output for the
-    same clip and quietly break the resume guarantee. Per call, with the item's own seed, each
-    item is reproducible from its identity alone. The vLLM paths pass the same per-item seed
-    in SamplingParams.
-    """
-    import torch
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
 
 
 ############################################
@@ -564,19 +473,13 @@ def free_model():
         _loaded_model_name = None
         print("[INFO] Model freed from memory.")
 
-def run_open_source(frames, prompt, seed_key=None):
+def run_open_source(frames, prompt):
+    """Run greedy inference with the currently loaded open-source model."""
     import torch
-    """Run inference with the currently loaded open source model.
-
-    seed_key identifies the item (``f"{clip_id}|{task_type}"``) so it is sampled with its own
-    seed; see SEED_MODE.
-    """
     global _loaded_model, _loaded_processor, _loaded_model_name
 
     if _loaded_model is None:
         raise RuntimeError("No model loaded. Call load_model() first.")
-
-    seed = item_seed(seed_key)
 
     pil_images = [frame_to_pil(f) for f in frames]
 
@@ -591,12 +494,12 @@ def run_open_source(frames, prompt, seed_key=None):
             return_tensors="pt",
         )
         inputs = {k: v.to("cuda:0", dtype=torch.bfloat16) if hasattr(v, 'to') and hasattr(v, 'dtype') and v.dtype in (torch.float32, torch.float16) else v.to("cuda:0") if hasattr(v, 'to') else v for k, v in inputs.items()}
-        _seed_torch(seed)
+
         with torch.no_grad():
             output = _loaded_model.generate(
                 **inputs, max_new_tokens=MAX_OUTPUT_TOKENS,
-                do_sample=True, temperature=TEMPERATURE, top_p=TOP_P,
-                repetition_penalty=REPETITION_PENALTY,
+                do_sample=False, num_beams=1,
+                repetition_penalty=1.0,
             )
         return _loaded_processor.decode(output[0], skip_special_tokens=True).strip()
 
@@ -616,13 +519,13 @@ def run_open_source(frames, prompt, seed_key=None):
         ).unsqueeze(0).to(_loaded_model.device)
         video = image_processor.preprocess(pil_images, return_tensors="pt")["pixel_values"]
         video = video.to(_loaded_model.device, dtype=_loaded_model.dtype)
-        _seed_torch(seed)
+
         with torch.inference_mode():
             output = _loaded_model.generate(
                 input_ids, images=[video], modalities=["video"],
                 max_new_tokens=MAX_OUTPUT_TOKENS,
-                do_sample=True, temperature=TEMPERATURE, top_p=TOP_P,
-                repetition_penalty=REPETITION_PENALTY,
+                do_sample=False, num_beams=1,
+                repetition_penalty=1.0,
             )
         return tokenizer.decode(output[0], skip_special_tokens=True).strip()
 
@@ -630,8 +533,8 @@ def run_open_source(frames, prompt, seed_key=None):
         from vllm import SamplingParams
         from io import BytesIO
         sampling_params = SamplingParams(max_tokens=MAX_OUTPUT_TOKENS,
-                                         temperature=TEMPERATURE, top_p=TOP_P, seed=seed,
-                                         repetition_penalty=REPETITION_PENALTY)
+                                         temperature=0.0, top_p=1.0,
+                                         repetition_penalty=1.0)
         image_contents = []
         for img in pil_images:
             buf = BytesIO()
@@ -681,8 +584,8 @@ def run_open_source(frames, prompt, seed_key=None):
                 "prompt": text_prompt,
                 "multi_modal_data": {"image": pil_images},
             }], SamplingParams(max_tokens=MAX_OUTPUT_TOKENS,
-                              temperature=TEMPERATURE, top_p=TOP_P, seed=seed,
-                              repetition_penalty=REPETITION_PENALTY))
+                              temperature=0.0, top_p=1.0,
+                              repetition_penalty=1.0))
             return outputs[0].outputs[0].text.strip()
 
         content = [{"type": "image", "image": img} for img in pil_images]
@@ -708,13 +611,13 @@ def run_open_source(frames, prompt, seed_key=None):
                 f"{len(pil_images) * _loaded_model.config.mm_tokens_per_image} -- the frames are "
                 f"not reaching the model."
             )
-        _seed_torch(seed)
+
         with torch.no_grad():
             output = _loaded_model.generate(
                 **inputs,
                 max_new_tokens=MAX_OUTPUT_TOKENS,
-                do_sample=True, temperature=TEMPERATURE, top_p=TOP_P,
-                repetition_penalty=REPETITION_PENALTY,
+                do_sample=False, num_beams=1,
+                repetition_penalty=1.0,
             )
         # generate() returns the prompt followed by the continuation; decoding the whole thing
         # would prepend 2048 image placeholders and the full instruction to every answer.
@@ -733,15 +636,13 @@ def run_open_source(frames, prompt, seed_key=None):
         pixel_values = torch.stack([transform(img) for img in pil_images]).to(_loaded_model.device, dtype=torch.bfloat16)
         num_patches_list = [len(pil_images)]
 
-        _seed_torch(seed)
         response = _loaded_model.chat(
             tokenizer=_loaded_processor,
             pixel_values=pixel_values,
             question=prompt,
             num_patches_list=num_patches_list,
-            generation_config={"max_new_tokens": MAX_OUTPUT_TOKENS, "do_sample": True,
-                               "temperature": TEMPERATURE, "top_p": TOP_P,
-                               "repetition_penalty": REPETITION_PENALTY}
+            generation_config={"max_new_tokens": MAX_OUTPUT_TOKENS, "do_sample": False,
+                               "num_beams": 1, "repetition_penalty": 1.0}
         )
         return response
 
@@ -755,12 +656,12 @@ def run_open_source(frames, prompt, seed_key=None):
         else v
         for k, v in inputs.items()
     }
-    _seed_torch(seed)
+
     with torch.no_grad():
         output = _loaded_model.generate(
             **inputs, max_new_tokens=MAX_OUTPUT_TOKENS,
-            do_sample=True, temperature=TEMPERATURE, top_p=TOP_P,
-                repetition_penalty=REPETITION_PENALTY,
+            do_sample=False, num_beams=1,
+            repetition_penalty=1.0,
         )
     return _loaded_processor.decode(output[0], skip_special_tokens=True).strip()
 
@@ -773,7 +674,7 @@ CLOSED_SOURCE_MODELS = set(GEMINI_MODEL_IDS) | {"gpt_realtime_mini"}
 OPEN_SOURCE_MODELS = {"qwen3vl_2b", "qwen3vl_4b", "qwen3vl_8b", "qwen3vl_32b", "internvl3_1b", "internvl3_2b", "internvl3_8b", "internvl3_9b", "internvl3_14b", "llava_video", "llama3_video", "gemma3_4b", "gemma3_12b", "gemma3_27b"}
 
 def run_model(frames, prompt, model_key, gemini_api_key=None, openai_api_key=None,
-              hf_token=None, seed_key=None):
+              hf_token=None):
     """Unified inference function for all models."""
     if model_key in GEMINI_MODEL_IDS:
         return run_gemini(
@@ -785,6 +686,6 @@ def run_model(frames, prompt, model_key, gemini_api_key=None, openai_api_key=Non
     elif model_key == "gpt_realtime_mini":
         return run_gpt_realtime(frames, prompt, openai_api_key)
     elif model_key in OPEN_SOURCE_MODELS:
-        return run_open_source(frames, prompt, seed_key=seed_key)
+        return run_open_source(frames, prompt)
     else:
         raise ValueError(f"Unknown model key: {model_key}")

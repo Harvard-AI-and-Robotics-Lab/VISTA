@@ -1,4 +1,4 @@
-"""Train, predict, or score the five archived VISTA models."""
+"""Train VISTA models, generate test predictions, and evaluate their answers."""
 import argparse
 import hashlib
 import json
@@ -47,8 +47,11 @@ def runtime_for(family):
     provenance = json.loads((ROOT / 'provenance.json').read_text())
     checksum = sha(ROOT / 'qwen.patch')
     if checksum != provenance['qwen_patch_sha256']:
-        raise ValueError('Qwen runtime patch has changed')
-    target = ROOT / 'outputs/runtime' / ('qwen-' + checksum[:12])
+        raise ValueError('Qwen runtime patch hash mismatch')
+    runtime_digest = hashlib.sha256(
+        json.dumps(provenance['runtime_hashes']['qwen'], sort_keys=True).encode()
+    ).hexdigest()[:12]
+    target = ROOT / 'outputs/runtime' / f'qwen-{checksum[:12]}-{runtime_digest}'
     if not target.exists():
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = Path(tempfile.mkdtemp(prefix='.qwen-', dir=target.parent))
@@ -76,12 +79,22 @@ def verify():
                            ('rubric.json', provenance['rubric_sha256']),
                            ('models.json', provenance['models_sha256'])]:
         if sha(ROOT / name) != expected:
-            raise ValueError(f'Preserved file changed: {name}')
+            raise ValueError(f'Artifact hash mismatch: {name}')
+    judge = provenance['judge']
+    for field in ('canonical_engine', 'canonical_dataset', 'canonical_rubric'):
+        if sha(ROOT.parent / judge[field]) != judge[field + '_sha256']:
+            raise ValueError(f'Judge source hash mismatch: {judge[field]}')
+    inference = provenance['inference']
+    for field in ('prompts', 'benchmark_models'):
+        if sha(ROOT.parent / inference[field]) != inference[field + '_sha256']:
+            raise ValueError(f'Inference source hash mismatch: {inference[field]}')
     for name, model in MODELS.items():
+        if model['max_new_tokens'] != 4096:
+            raise ValueError(f'Output cap must be 4096: {name}')
         for stage, config in model['configs'].items():
             encoded = json.dumps(config, sort_keys=True, separators=(',', ':')).encode()
             if hashlib.sha256(encoded).hexdigest() != provenance['config_digests'][name][stage]:
-                raise ValueError(f'Campaign config changed: {name}/{stage}')
+                raise ValueError(f'Model configuration hash mismatch: {name}/{stage}')
             if config['sensor']['modalities'] != ['imu', 'magbaro', 'gaze', 'hands', 'trajectory']:
                 raise ValueError('Only the selected five-stream no-audio method is included')
     runtime_for('native')
@@ -106,8 +119,7 @@ def configuration(args, stage, gpus):
                 raise ValueError('Requested GPUs cannot preserve effective batch size 32')
             config['accumulation'] = 32 // batch
         if getattr(args, 'smoke_test', False):
-            # Exercise both stages and leave one step after sensor-only warmup.
-            # These overrides belong only to disposable smoke runs.
+        # Keep the smoke test short while exercising joint adaptation after warmup.
             config.update(max_steps=2, batch_size=1, accumulation=1, workers=0,
                           sensor_warmup_steps=1 if stage == 'stage2' else 0)
     checksum = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()[:12]
@@ -134,7 +146,7 @@ def download(args):
     from huggingface_hub import snapshot_download
     model = MODELS[args.model]
     if 'hub' not in model:
-        raise ValueError('This model is archived on GitHub; only the InternVL adapters are on the private HF repo')
+        raise ValueError('Checkpoint downloads are available for InternVL models; provide other adapters with --checkpoint')
     hub = model['hub']
     cached = Path(snapshot_download(hub['repo'], revision=hub['revision'],
                                    allow_patterns=[hub['folder'] + '/*']))
@@ -155,7 +167,7 @@ def download(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='action', required=True)
-    commands.add_parser('verify', help='Verify all five archived configs and runtime variants offline')
+    commands.add_parser('verify', help='Verify model configurations and runtime implementations offline')
     for action in ('train', 'predict', 'judge', 'download-checkpoint'):
         p = commands.add_parser(action)
         p.add_argument('--model', choices=tuple(MODELS), required=True)
@@ -167,7 +179,7 @@ def main():
         if action == 'train':
             p.add_argument('--stage', choices=('stage1', 'stage2', 'both'), default='both')
             p.add_argument('--training-root', default=str(ROOT / 'runs'))
-            p.add_argument('--gpus', type=int, choices=(1, 2), help='Defaults to archived GPU count; preserves effective batch 32')
+            p.add_argument('--gpus', type=int, choices=(1, 2), help='Training GPUs; gradient accumulation maintains effective batch size 32')
             p.add_argument('--smoke-test', action='store_true',
                            help='Two optimizer steps per stage, microbatch 1, and one stage-2 warmup step')
         elif action == 'predict':
@@ -175,6 +187,7 @@ def main():
             p.add_argument('--output', help='Prediction JSONL destination')
             p.add_argument('--resume', action='store_true')
         else:
+            p.add_argument('--csv', help='Original test annotation CSV for the paper judge')
             p.add_argument('--predictions', help='Completed prediction JSONL')
             p.add_argument('--output-dir', help='Judge output directory')
             p.add_argument('--key-files', nargs='+', required=True, help='External OpenRouter key files')
@@ -192,7 +205,7 @@ def main():
     gpus = getattr(args, 'gpus', None) or (
         1 if getattr(args, 'smoke_test', False) else model['training_gpus'])
     if model['runtime'] != 'qwen' and gpus != 1:
-        parser.error('The archived InternVL/Gemma trainer supports one GPU; Qwen supports two')
+        parser.error('InternVL and Gemma support one training GPU; Qwen supports one or two')
     if args.action == 'train':
         if args.smoke_test and Path(args.training_root).resolve() == ROOT / 'runs':
             args.training_root = str(ROOT / 'outputs/smoke-runs')
@@ -207,15 +220,14 @@ def main():
             execute(command, runtime, args.dry_run)
         return
     config = configuration(args, 'eval', 1)
-    output = ROOT / 'outputs' / args.model
+    output = ROOT / 'outputs' / args.model / 'test'
     if args.action == 'predict':
         candidates = [ROOT / 'runs' / args.model / 'stage2/adapter',
-                      ROOT / 'checkpoints' / args.model / 'stage2/adapter',
-                      Path('/workspace/VISTA_campaigns') / model['campaign'] / args.model / 'stage2/adapter']
+                      ROOT / 'checkpoints' / args.model / 'stage2/adapter']
         checkpoint = Path(args.checkpoint).resolve() if args.checkpoint else next(
             (p for p in candidates if p.exists()), candidates[-1])
         command = [sys.executable, '-u', '-m', 'vista_mm.predict', '--config', str(config),
-                   '--checkpoint', str(checkpoint), '--split', 'val', '--output',
+                   '--checkpoint', str(checkpoint), '--split', 'test', '--output',
                    str(Path(args.output).resolve() if args.output else output / 'predictions.jsonl'),
                    '--max-new-tokens', str(model['max_new_tokens'])]
         if args.resume:
@@ -228,11 +240,13 @@ def main():
             write_json(no_overrides, {})
         command = [sys.executable, '-u', str(ROOT / 'judge.py'), '--config', str(config),
                    '--predictions', str(Path(args.predictions).resolve() if args.predictions else output / 'predictions.jsonl'),
-                   '--split', 'val', '--rubric', str(ROOT / 'rubric.json'), '--judge-profile', str(profile),
+                   '--split', 'test', '--rubric', str(ROOT / 'rubric.json'), '--judge-profile', str(profile),
                    '--output-dir', str(Path(args.output_dir).resolve() if args.output_dir else output / 'judge3'),
                    '--key-files', *args.key_files, '--concurrency', str(args.concurrency),
                    '--max-cost-usd', str(args.max_cost_usd), '--model-label', f'VISTA {args.model}',
                    '--runtime-settings', str(no_overrides)]
+        if args.csv:
+            command += ['--csv', str(Path(args.csv).resolve())]
     execute(command, runtime, args.dry_run)
 
 

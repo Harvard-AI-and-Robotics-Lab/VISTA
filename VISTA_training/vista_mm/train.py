@@ -202,11 +202,7 @@ def configure_trainable(model, config):
 
 
 class VistaTrainer(Trainer):
-    """Response-normalized loss prevents long references from dominating examples.
-
-    Each example has equal weight within the training objective. Report task-specific
-    judge scores separately; no unreported class weights or test-derived balancing.
-    """
+    """Average response loss per example so long references do not dominate training."""
 
     def __init__(self, *args, sensor_lr, encoder_lr=1e-06, **kwargs):
         super().__init__(*args, **kwargs)
@@ -283,7 +279,7 @@ def main():
         or cfg.smoke_seconds
         or cfg.train_mode != "lora"
     ):
-        raise ValueError("This campaign uses the VISTA LoRA recipe only")
+        raise ValueError("Training requires the VISTA LoRA configuration")
     set_seed(cfg.seed)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.benchmark = False
@@ -319,7 +315,6 @@ def main():
         max_steps=cfg.max_steps,
         num_train_epochs=cfg.epochs,
         per_device_train_batch_size=cfg.batch_size,
-        per_device_eval_batch_size=1,
         gradient_accumulation_steps=cfg.accumulation,
         learning_rate=cfg.backbone_lr,
         weight_decay=cfg.weight_decay,
@@ -330,8 +325,7 @@ def main():
         tf32=True,
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
-        eval_strategy="steps",
-        eval_steps=70,
+        eval_strategy="no",
         save_strategy="no",
         logging_steps=1,
         logging_nan_inf_filter=False,
@@ -356,7 +350,6 @@ def main():
         model=model,
         args=training_args,
         train_dataset=VistaDataset(cfg.prepared, "train", cfg, training=True),
-        eval_dataset=VistaDataset(cfg.prepared, "val", cfg, training=False),
         data_collator=VistaCollator(processor, cfg, training=True),
         processing_class=processor,
         sensor_lr=cfg.sensor_lr,
@@ -365,7 +358,7 @@ def main():
         if cfg.sensor_warmup_steps
         else [],
     )
-    with RunMonitor(root / "resources", "trainer_train_including_evaluation"):
+    with RunMonitor(root / "resources", "trainer_train"):
         training_result = trainer.train()
     trainer.save_metrics("train", training_result.metrics)
     trainer.save_model(str(root / "adapter"))

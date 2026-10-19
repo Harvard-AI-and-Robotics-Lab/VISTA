@@ -1,4 +1,4 @@
-"""Prepared split loading and answer-only supervision using the native video processor."""
+"""Prepared VISTA datasets and multimodal input collation."""
 
 import json
 from pathlib import Path
@@ -10,20 +10,10 @@ from transformers import Qwen3VLProcessor
 
 from .config import SensorConfig
 from .features import SCHEMA, read_rgb
-from .manifest import SYSTEM
+from .manifest import build_prompt
 from .model import SENSOR_TOKEN
 from .native_features import NATIVE_SCHEMA, RECIPE
 from .provenance import read_jsonl, sha256
-
-GROUNDING_INSTRUCTIONS = (
-    "Before giving movement guidance, check the visible path and obstacles. "
-    "Use clear landmark-relative directions and distinguish what is visible from "
-    "what is uncertain. Do not invent precise distances, step counts, turn angles, "
-    "sign text, controls, or unseen routes. Give a concrete next action supported "
-    "by the observations; if a route is blocked or cannot be verified, say so. "
-    "Answer the requested task without adding unsupported detail."
-)
-
 
 def detail_frame_content(frames, selected):
     """Eight overview frames, with four quadrant crops of two fixed keyframes.
@@ -56,11 +46,7 @@ def detail_frame_content(frames, selected):
 
 
 class SynchronizedQwenProcessor(Qwen3VLProcessor):
-    """Use captured device timestamps instead of reconstructing time from average FPS.
-
-    One collator/processor belongs to one DataLoader worker. This class is deliberately
-    not a concurrent serving interface; callers set timestamps around one processor call.
-    """
+    """Align video-token timestamps with the sampled device timestamps."""
 
     frame_timestamps = None
 
@@ -156,8 +142,8 @@ class VistaDataset(Dataset):
         shuffle_sensors=False,
         shuffle_preserve_availability=False,
     ):
-        if split not in ("train", "val", "test") or (training and split != "train"):
-            raise ValueError("Training must use train; validation/test stay held out")
+        if split not in ("train", "test") or (training and split != "train"):
+            raise ValueError("Training must use train; test stays held out")
         self.root, self.config, self.split = Path(root), config, split
         self.manifest, norm = verify_prepared(
             root,
@@ -323,22 +309,18 @@ class VistaCollator:
         sensors = bool(self.config.sensor.get("modalities", []))
         slots = (
             (
-                "\nSensor observations: "
-                + SENSOR_TOKEN * SensorConfig(**self.config.sensor).input_tokens
+                "\n" + SENSOR_TOKEN * SensorConfig(**self.config.sensor).input_tokens
             )
             if sensors
             else ""
         )
-        system = example.get("system_prompt", SYSTEM)
-        if self.config.grounded_prompt:
-            system += " " + GROUNDING_INSTRUCTIONS
+        prompt = build_prompt(example)
         messages = [
-            {"role": "system", "content": system},
             {
                 "role": "user",
                 "content": [
                     {"type": "video"},
-                    {"type": "text", "text": example["question"] + slots},
+                    {"type": "text", "text": prompt + slots},
                 ],
             },
         ]
@@ -355,7 +337,7 @@ class VistaCollator:
                     ]
                 )
             content.append(
-                {"type": "text", "text": system + "\n" + example["question"] + slots}
+                {"type": "text", "text": prompt + slots}
             )
             text = self.processor.apply_chat_template(
                 [{"role": "user", "content": content}],
@@ -382,8 +364,8 @@ class VistaCollator:
             content, detail_images = detail_frame_content(
                 example["frames"], self.config.internvl_detail_frames
             )
-            messages[1]["content"] = content + [
-                {"type": "text", "text": example["question"] + slots}
+            messages[0]["content"] = content + [
+                {"type": "text", "text": prompt + slots}
             ]
         text = self.processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True

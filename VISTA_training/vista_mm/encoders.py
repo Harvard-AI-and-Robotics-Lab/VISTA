@@ -1,8 +1,7 @@
-"""Native pretrained frontends upstream of the question-conditioned resamplers.
+"""Pretrained sensor encoders for question-conditioned temporal resampling.
 
-No network access or checkpoint loading at import/construction. Audio microphones
-are encoded independently, then feature-averaged; two IMUs share one PRIMUS trunk.
-"""
+Audio channels are encoded independently and averaged; IMU inputs share a PRIMUS
+encoder. Weights are loaded explicitly during model initialization."""
 
 from contextlib import nullcontext
 

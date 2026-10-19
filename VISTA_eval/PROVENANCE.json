@@ -1,17 +1,11 @@
 {
   "source_engine": "VISTA_eval/vlm_judge_openrouter.py",
   "source_engine_sha256": "b4315f1f321a8a242d4b3e2da72835d182c130a8a3cba94c2d26468f4ef56d5e",
-  "packaged_engine_sha256": "a0001e6e2391c9980d3498090c98c617fd7977e6bf65c2df922ef554779eddb5",
-  "byte_identical_files": {
-    "prompts/assistancevlmjudge_vista.json": {
-      "source": "VISTA_eval/prompts/assistancevlmjudge_vista.json",
-      "sha256": "0cf63a6b6090519bcfa786e81551beb12506f9419e0e4bd6aa84db4e82d89901"
-    }
-  },
+  "packaged_engine_sha256": "dee73ed486a1990747d2d4751dcc1e04da665b173b0f22412f42a730abb55fc5",
+  "byte_identical_files": {},
   "unchanged_function_and_class_sha256": {
     "_frame_to_data_url": "f79ab4291669a76690df33e214e8964b65d5d94640c6b7a0b80dc88d55a97e74",
     "load_rubric_contract": "256f411eb3ff645734f9015dae32f911b91cd64132cae5d2f258e15435013638",
-    "build_prompt_v5": "02d7d0b10e601887981b0e9c5fcc58f2bcd755c0af2167efcf139cd9e4845624",
     "parse_judge_output_v5": "a2a48c9705ab24fd49eeb5c8d27eab4b02ad5cd18546af493e808bc73c02f45f",
     "_discover_prediction_files": "5f0cd2b30296df06d6f7a8198a199ecaa28f8db86f2a8c71e32171b40f2febc6"
   },
@@ -22,7 +16,7 @@
     },
     "call_judge_openai": {
       "source_sha256": "5c1d0dc14b72c866f4f45dde4eb03686b1ac5f081fb9a40d8e3c6fce2e78c9d1",
-      "packaged_sha256": "66608ba647f48f4925b4a6a30733e850ceba47873c2830a9b56fc613c9edca46"
+      "packaged_sha256": "a8ac553ca65a68057257830a33d4166293209ab5741331ceae2d8e444059477d"
     },
     "resolve_backend": {
       "source_sha256": "4bd2410f10b8202a34867ae60aa3cc10713b205a340edff8740211c541363b07",
@@ -34,7 +28,7 @@
     },
     "main": {
       "source_sha256": "dcd4c95f4177cec47e9d522c11eb2087d3cfec78f6adf6cc86bba053aeb4e85a",
-      "packaged_sha256": "2d46f4d9a5e18b8c0ad9ecf6eb2f84b3524274b202395ef7f9d5e9c482eda523"
+      "packaged_sha256": "b239b700cbc107fbb67d40f85f7a91eb9703c58d16e1b50ddbea9a8824a2efe9"
     },
     "_read_api_key": {
       "source_sha256": "d2c557fb2688d74bd6c77527dd314aecbd8253bf9b58cb293bdf7dda5731b1b7",
@@ -51,6 +45,10 @@
     "aggregate": {
       "source_sha256": "5c2dcd2ab808aa41246104ef8a9f948b10868ef0c7987e4b0fab414178149ba4",
       "packaged_sha256": "e9f1aec58b93464b3a8a7adff9ba22ee09729d0ba0f99469c56e1b1ad5077a59"
+    },
+    "build_prompt_v5": {
+      "source_sha256": "02d7d0b10e601887981b0e9c5fcc58f2bcd755c0af2167efcf139cd9e4845624",
+      "packaged_sha256": "40c97f6342ffbe93ae3815a9f0042c972b84126da87f06815e741f2a788b2387"
     }
   },
   "added_function_and_class_sha256": {
@@ -61,6 +59,11 @@
       "source": "VISTA_eval/dataset_vista.py",
       "source_sha256": "0df81e5a4724fb570298075dac75bb72276b088032bf3f92672de9546485f444",
       "packaged_sha256": "4c6db13e96d98f08067342c94856e88ad0f46570756aa1f127b094d9e6fdfe4f"
+    },
+    "prompts/assistancevlmjudge_vista.json": {
+      "source": "VISTA_eval/prompts/assistancevlmjudge_vista.json",
+      "source_sha256": "0cf63a6b6090519bcfa786e81551beb12506f9419e0e4bd6aa84db4e82d89901",
+      "packaged_sha256": "abc7445e36ce18be8dccd2b233a2b6401a0e2b4ca2c607063962afac908624af"
     }
   },
   "v5_only_update": {
@@ -71,10 +74,15 @@
     "removed_adapter_functions": [
       "build_prompt"
     ],
-    "scoring": "Four components, 0.05 increments, critical-error cap 1.95; high reasoning by default"
+    "scoring": "Four components, 0.05 increments, critical-error cap 1.95; high reasoning required"
   },
   "portable_batch_update": {
     "previous_packaged_engine_sha256": "b377b26db98d227312d0c65b801fe125a8d4af8b2305863d6f73de21bdb7b62e",
     "scope": "Batch --dataset-root and --csv are required CLI inputs. Removed personal data paths; rubric, scoring, request settings, and adapters are unchanged."
+  },
+  "high_reasoning_policy": {
+    "previous_packaged_engine_sha256": "a0001e6e2391c9980d3498090c98c617fd7977e6bf65c2df922ef554779eddb5",
+    "reasoning_effort": "high",
+    "scope": "All single and batch judge calls require high reasoning; CLI and programmatic overrides are rejected. Rubric and scoring are unchanged."
   }
 }

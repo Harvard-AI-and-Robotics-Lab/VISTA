@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vista-training"
 version = "0.1.0"
-description = "VISTA InternVL3, Qwen3-VL, Gemma 3 training and Judge 3 evaluation"
+description = "VISTA InternVL3, Qwen3-VL, Gemma 3 training and evaluation"
 requires-python = ">=3.11,<3.13"
 dependencies = [
   "torch==2.9.1", "torchvision==0.24.1", "torchaudio==2.9.1",
