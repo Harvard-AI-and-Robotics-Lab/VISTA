@@ -7,28 +7,6 @@ zero-shot inference, sensor-conditioned model training, and evaluation for VISTA
 
 [[Homepage]](https://harvard-ai-and-robotics-lab.github.io/VISTA/)
 
-## Dataset Setup
-
-Download the full VISTA dataset, including annotations and all available modalities, from
-[Hugging Face](https://huggingface.co/datasets/harvardairobotics/VISTA):
-
-```bash
-python -m pip install -U huggingface_hub
-hf download harvardairobotics/VISTA --repo-type dataset --local-dir /path/to/VISTA
-```
-
-This downloads all three splits with their available video, audio, sensor, and tracking files:
-
-```text
-/path/to/VISTA/
-  train.csv
-  val.csv
-  test.csv
-  train/
-  val/
-  test/
-```
-
 ## Zero-Shot Inference
 
 Run the commands below from this code repository's root, using Linux/Bash and
