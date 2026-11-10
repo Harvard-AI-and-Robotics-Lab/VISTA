@@ -5,7 +5,7 @@ visual assistance through scene descriptions, question answering, and
 goal-conditioned instructions across ten task categories. This repository provides
 zero-shot inference, sensor-conditioned model training, and evaluation for VISTA.
 
-[[Homepage]](https://harvard-ai-and-robotics-lab.github.io/VISTA/)
+[[Homepage]](https://anonymous.4open.science/r/VISTA-60D5/website/index.html)
 
 ## Zero-Shot Inference
 
