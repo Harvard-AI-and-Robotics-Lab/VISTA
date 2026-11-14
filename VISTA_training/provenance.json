@@ -93,7 +93,7 @@
     "vista_mm/third_party/beats/modules.py"
   ],
   "method": "question-conditioned-sensor-fusion-with-lora",
-  "judge_sha256": "808a73e00c7e550e74080d4451fe4a1ee14f41a777cd4f32aa739c2f4d256965",
+  "judge_sha256": "ab8b09ba205aee6e5175986842445fc538f52245fa10c35806ea17dca14c6b7d",
   "rubric_sha256": "abc7445e36ce18be8dccd2b233a2b6401a0e2b4ca2c607063962afac908624af",
   "qwen_patch_sha256": "ce8100a7c51312744feec365df939aaec0fbb59a5b662410a9d1ddda0dcc7e3c",
   "models_sha256": "c20f618cee7fd2c0cc9ba4866e371d2e96f004330722be9efe9a60b41adfe976",

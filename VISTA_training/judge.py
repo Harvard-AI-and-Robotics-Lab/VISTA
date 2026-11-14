@@ -9,7 +9,7 @@ from pathlib import Path
 from vista_mm.config import Experiment
 from vista_mm.data import make_dataset
 from vista_mm.evaluate import task_group
-from vista_mm.judge3 import Judge3Rubric, PAPER_DATASET, PAPER_ENGINE_PATH, PAPER_DATASET_PATH
+from vista_mm.judge3 import Judge3Rubric, PAPER_ENGINE_PATH, PAPER_DATASET_PATH
 from vista_mm.judge_profile import load_profile, request_settings
 from vista_mm.openrouter_judge import Client, read_keys
 from vista_mm.provenance import atomic_json, digest, read_jsonl, sha256
@@ -102,9 +102,6 @@ def main():
     if len(paper_items) != len(expected) or {r["item_id"] for r in paper_items} != set(expected):
         raise ValueError("Paper adapter and prepared split contain different tasks")
     prepared_indices = {item["item_id"]: i for i, item in enumerate(dataset.items)}
-    if config.input_mode == "rgb":
-        # RGB judging shows the judge the same frames as the zero-shot VISTA_eval run.
-        PAPER_DATASET.DATASET_ROOT = str(Path(dataset.manifest["dataset_root"]) / args.split)
     complete = json.loads(pred_path.with_suffix(".complete.json").read_text())
     original = json.loads(pred_path.with_suffix(".protocol.json").read_text())
     model_label = args.model_label or (
@@ -137,9 +134,7 @@ def main():
         "min_pixels": config.min_pixels,
         "max_pixels": config.max_pixels,
         "image_encoding": "jpeg-quality85-native-resolution",
-        "frame_sampling": "VISTA_eval get_frames, as zero-shot judging"
-        if config.input_mode == "rgb"
-        else "same eight prepared frame indices as the evaluated model",
+        "frame_sampling": "same eight prepared frame indices as the evaluated model",
         "annotation_sha256": sha256(annotation_csv),
         "paper_engine_sha256": sha256(PAPER_ENGINE_PATH),
         "paper_dataset_sha256": sha256(PAPER_DATASET_PATH),
@@ -174,19 +169,14 @@ def main():
             if any(result[k] != v for k, v in parsed.items()):
                 raise ValueError("Saved verdict differs from raw response")
             return result
-        if config.input_mode == "rgb":
-            frames = PAPER_DATASET.get_frames(item, 8)
-            if not frames:
-                raise ValueError(f"Judge frames unavailable: {item['item_id']}")
-        else:
-            frames = dataset[prepared_indices[item["item_id"]]]["frames"]
+        example = dataset[prepared_indices[item["item_id"]]]
         payload = {
             **request_settings(profile),
             "messages": [
                 {"role": "system", "content": rubric.contract["system"]},
                 {
                     "role": "user",
-                    "content": rubric.image_content(frames)
+                    "content": rubric.image_content(example["frames"])
                     + [
                         {
                             "type": "text",
