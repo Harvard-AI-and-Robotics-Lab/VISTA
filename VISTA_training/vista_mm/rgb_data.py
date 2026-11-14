@@ -196,6 +196,24 @@ def verify_rgb(root, selected_modalities=()):
     return manifest
 
 
+def read_zero_shot_frames(video, indices):
+    """Decode frames as VISTA_benchmark/models.py extract_frames does: seek, read, BGR->RGB."""
+    import cv2
+
+    cap = cv2.VideoCapture(str(video))
+    try:
+        frames = []
+        for idx in indices:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
+            ok, frame = cap.read()
+            if not ok:
+                raise ValueError(f"Cannot read {video} frame {idx}")
+            frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        return np.stack(frames)
+    finally:
+        cap.release()
+
+
 class RGBDataset:
     def __init__(self, root, split, config, training=False, **sensor_options):
         if split not in SPLITS or (training and split != "train"):
@@ -216,7 +234,6 @@ class RGBDataset:
         return len(self.items)
 
     def __getitem__(self, index):
-        from .features import read_rgb
         item = self.items[index]
         clip = self.clips[item["clip_id"]]
         if clip["clip_id"] not in self._verified:
@@ -224,7 +241,7 @@ class RGBDataset:
                 raise ValueError(f"RGB video changed after preparation: {clip['clip_id']}")
             self._verified.add(clip["clip_id"])
         indices = np.asarray(clip["frame_indices"], dtype=np.int64)
-        return dict(item, frames=read_rgb(clip["video"], indices, clip["frame_count"]),
+        return dict(item, frames=read_zero_shot_frames(clip["video"], indices),
                     frame_times=np.asarray(clip["frame_times"], dtype=np.float32),
                     frame_indices=indices, frame_count=clip["frame_count"])
 

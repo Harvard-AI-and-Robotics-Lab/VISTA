@@ -25,7 +25,7 @@
       "vista_mm/predict.py": "41b686d968bd5d7ef79be84849305f8cb2af60b2160bf2cfa7eb3b7eab92ed1a",
       "vista_mm/primus.py": "b1cdbd871aa787077827684467334e42c08d00dea0c628881eff5975b2919cbc",
       "vista_mm/provenance.py": "32e5adc71d14d4c476f063485762a6ae62cee08e624113b0b140be9dbc8d9106",
-      "vista_mm/rgb_data.py": "a3daa477d388f89d921b3f59baa449481af4153bf80eee74f072a490fc3946c8",
+      "vista_mm/rgb_data.py": "f5f8246a2002e17277ad081f4eac381d5328935647ad57d161bda8684b011fa7",
       "vista_mm/train.py": "f5ad822b3fc243aae9e630cf6eade531b19b96eff8a7a557030be63444e0acec"
     },
     "qwen": {
@@ -54,7 +54,7 @@
       "vista_mm/predict.py": "70f3222b9ff4d178773103b03bda6b1226dd71d5042c9f75fcbdaf1f058add5b",
       "vista_mm/primus.py": "b1cdbd871aa787077827684467334e42c08d00dea0c628881eff5975b2919cbc",
       "vista_mm/provenance.py": "32e5adc71d14d4c476f063485762a6ae62cee08e624113b0b140be9dbc8d9106",
-      "vista_mm/rgb_data.py": "a3daa477d388f89d921b3f59baa449481af4153bf80eee74f072a490fc3946c8",
+      "vista_mm/rgb_data.py": "f5f8246a2002e17277ad081f4eac381d5328935647ad57d161bda8684b011fa7",
       "vista_mm/train.py": "972afd35b48002297051202df73e53d06e8ac0b7119755d6174c304061aac92e"
     }
   },
@@ -93,7 +93,7 @@
     "vista_mm/third_party/beats/modules.py"
   ],
   "method": "question-conditioned-sensor-fusion-with-lora",
-  "judge_sha256": "ab8b09ba205aee6e5175986842445fc538f52245fa10c35806ea17dca14c6b7d",
+  "judge_sha256": "808a73e00c7e550e74080d4451fe4a1ee14f41a777cd4f32aa739c2f4d256965",
   "rubric_sha256": "abc7445e36ce18be8dccd2b233a2b6401a0e2b4ca2c607063962afac908624af",
   "qwen_patch_sha256": "ce8100a7c51312744feec365df939aaec0fbb59a5b662410a9d1ddda0dcc7e3c",
   "models_sha256": "c20f618cee7fd2c0cc9ba4866e371d2e96f004330722be9efe9a60b41adfe976",
