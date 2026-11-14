@@ -60,8 +60,8 @@ def test_preparation_and_dataset_need_no_sensor_cache(raw_dataset, tmp_path):
     dataset = RGBDataset(out, "train", rgb_config(), training=True)
     sample = dataset[0]
     assert sample["frames"].shape == (8, 32, 32, 3)
-    assert sample["frame_indices"].tolist() == [0, 1, 3, 4, 5, 6, 8, 9]
-    assert np.allclose(sample["frame_times"], [0, .1, .3, .4, .5, .6, .8, .9])
+    assert sample["frame_indices"].tolist() == [0, 1, 2, 4, 5, 7, 8, 9]
+    assert np.allclose(sample["frame_times"], [0, .1, .2, .4, .5, .7, .8, .9])
     assert sample["references"] == ["A room.", "An indoor room."]
     assert "sensors" not in sample
     assert [i["task_type"] for i in dataset.items] == ["scene_description", "question_9", "goal_17"]

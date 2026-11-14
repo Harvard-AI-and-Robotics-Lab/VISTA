@@ -77,14 +77,16 @@ def video_metadata(video, allow_trailing_timestamp=False):
         raise ValueError(f"Video must contain at least eight frames: {video}")
     clock = video.parent / "vrs/rgb_timestamps.csv"
     if clock.is_file():
-        times, indices = rgb_clock(video.parent, video, allow_trailing_timestamp)
+        times, _ = rgb_clock(video.parent, video, allow_trailing_timestamp)
         source = "device_timestamps"
     else:
         if not np.isfinite(fps) or fps <= 0:
             raise ValueError(f"No usable RGB timestamps or video FPS: {video}")
         times = np.arange(count, dtype=np.float64) / fps
-        indices = np.rint(np.linspace(0, count - 1, 8)).astype(np.int64)
         source = "video_fps"
+    # Same eight frames as zero-shot inference (VISTA_benchmark/models.py extract_frames).
+    indices = np.asarray([min(int(i * count / (8 - 1)), count - 1) for i in range(8)],
+                         dtype=np.int64)
     return dict(video=str(video.resolve()), video_sha256=sha256(video),
                 frame_count=count, frame_indices=indices.tolist(),
                 frame_times=(times[indices] - times[0]).astype(np.float32).tolist(),
