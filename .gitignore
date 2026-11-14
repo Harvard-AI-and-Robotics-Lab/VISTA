@@ -26,3 +26,12 @@ venv_*/
 # Generated benchmark outputs and queue state
 VISTA_benchmark/outputs/
 VISTA_benchmark/logs/
+
+# Local training environments and generated experiment artifacts.
+VISTA_training/.venv/
+VISTA_training/*.egg-info/
+VISTA_training/outputs/
+VISTA_training/runs/
+VISTA_training/data/
+VISTA_training/checkpoints/
+**/.pytest_cache/

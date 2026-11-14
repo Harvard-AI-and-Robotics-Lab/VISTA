@@ -97,14 +97,35 @@ def verify():
                 raise ValueError(f'Model configuration hash mismatch: {name}/{stage}')
             if config['sensor']['modalities'] != ['imu', 'magbaro', 'gaze', 'hands', 'trajectory']:
                 raise ValueError('Only the selected five-stream no-audio method is included')
+            rgb = model_configuration(name, stage, 'rgb')
+            encoded = json.dumps(rgb, sort_keys=True, separators=(',', ':')).encode()
+            if hashlib.sha256(encoded).hexdigest() != provenance['rgb_config_digests'][name][stage]:
+                raise ValueError(f'RGB configuration hash mismatch: {name}/{stage}')
     runtime_for('native')
     runtime_for('qwen')
-    print(json.dumps({'status': 'verified', 'models': list(MODELS), 'configs': 15,
+    print(json.dumps({'status': 'verified', 'models': list(MODELS), 'configs': 30,
                       'runtimes': ['native', 'qwen'], 'paid_api_calls': 0}))
 
 
+def model_configuration(model, stage, input_mode='multimodal'):
+    if input_mode not in ('rgb', 'multimodal'):
+        raise ValueError('input_mode must be rgb or multimodal')
+    config = json.loads(json.dumps(MODELS[model]['configs'][stage]))
+    if input_mode == 'rgb':
+        config.update(input_mode='rgb', sensor={'modalities': []},
+                      sensor_warmup_steps=0, encoder_assets=None, min_modality_coverage=0,
+                      allow_missing_modalities=[], gradient_modulation='none',
+                      prepared='data/prepared_rgb', output_dir=f'runs/rgb/{model}/{stage}')
+        if stage == 'stage1':
+            config['initial_adapter'] = None
+        else:
+            config['initial_adapter'] = f'runs/rgb/{model}/stage1/adapter'
+    return config
+
+
 def configuration(args, stage, gpus):
-    config = json.loads(json.dumps(MODELS[args.model]['configs'][stage]))
+    mode = getattr(args, 'input_mode', 'multimodal')
+    config = model_configuration(args.model, stage, mode)
     for field in ('prepared', 'encoder_assets'):
         if getattr(args, field, None):
             config[field] = str(Path(getattr(args, field)).resolve())
@@ -113,7 +134,9 @@ def configuration(args, stage, gpus):
         config['output_dir'] = str(training / args.model / stage)
         if stage == 'stage2':
             config['initial_adapter'] = str(training / args.model / 'stage1/adapter')
-        if gpus != MODELS[args.model]['training_gpus']:
+        if getattr(args, 'batch_size', None):
+            config['batch_size'] = args.batch_size
+        if gpus != MODELS[args.model]['training_gpus'] or getattr(args, 'batch_size', None):
             batch = config['batch_size'] * gpus
             if 32 % batch:
                 raise ValueError('Requested GPUs cannot preserve effective batch size 32')
@@ -121,9 +144,10 @@ def configuration(args, stage, gpus):
         if getattr(args, 'smoke_test', False):
         # Keep the smoke test short while exercising joint adaptation after warmup.
             config.update(max_steps=2, batch_size=1, accumulation=1, workers=0,
-                          sensor_warmup_steps=1 if stage == 'stage2' else 0)
+                          sensor_warmup_steps=1 if stage == 'stage2' and mode == 'multimodal' else 0)
     checksum = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()[:12]
-    path = ROOT / 'outputs/configs' / f'{args.model}-{stage}-{checksum}.json'
+    prefix = 'rgb-' if mode == 'rgb' else ''
+    path = ROOT / 'outputs/configs' / f'{prefix}{args.model}-{stage}-{checksum}.json'
     if not args.dry_run:
         write_json(path, config)
     return path
@@ -168,18 +192,27 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='action', required=True)
     commands.add_parser('verify', help='Verify model configurations and runtime implementations offline')
+    prepare = commands.add_parser('prepare-rgb', help='Prepare RGB videos and CSV tasks without sensors')
+    prepare.add_argument('--dataset-root', required=True)
+    prepare.add_argument('--output', required=True)
+    prepare.add_argument('--compare-mm-prepared', help='Require identical MM tasks, references, frames and timing')
+    prepare.add_argument('--allow-trailing-timestamp', action='store_true')
+    prepare.add_argument('--splits', nargs='+', choices=('train', 'val', 'test'),
+                         default=('train', 'val', 'test'), help='Splits present in the local dataset')
     for action in ('train', 'predict', 'judge', 'download-checkpoint'):
         p = commands.add_parser(action)
         p.add_argument('--model', choices=tuple(MODELS), required=True)
         if action == 'download-checkpoint':
             continue
-        p.add_argument('--prepared', help='Complete prepared native_v2 dataset')
+        p.add_argument('--input-mode', choices=('multimodal', 'rgb'), default='multimodal')
+        p.add_argument('--prepared', help='Prepared native_v2 (multimodal) or RGB dataset')
         p.add_argument('--encoder-assets', help='Verified pretrained encoder asset directory')
         p.add_argument('--dry-run', action='store_true', help='Print commands without training, inference, or API calls')
         if action == 'train':
             p.add_argument('--stage', choices=('stage1', 'stage2', 'both'), default='both')
-            p.add_argument('--training-root', default=str(ROOT / 'runs'))
+            p.add_argument('--training-root', help='Defaults to runs/ or runs/rgb/ for RGB mode')
             p.add_argument('--gpus', type=int, choices=(1, 2), help='Training GPUs; gradient accumulation maintains effective batch size 32')
+            p.add_argument('--batch-size', type=int, help='Per-GPU microbatch; accumulation preserves effective batch size 32')
             p.add_argument('--smoke-test', action='store_true',
                            help='Two optimizer steps per stage, microbatch 1, and one stage-2 warmup step')
         elif action == 'predict':
@@ -194,6 +227,17 @@ def main():
             p.add_argument('--concurrency', type=int, default=12)
             p.add_argument('--max-cost-usd', type=float, default=5)
     args = parser.parse_args()
+    if args.action == 'prepare-rgb':
+        verify_runtime(ROOT, 'native')
+        command = [sys.executable, '-u', '-m', 'vista_mm.rgb_data',
+                   '--dataset-root', args.dataset_root, '--output', args.output,
+                   '--splits', *args.splits]
+        if args.compare_mm_prepared:
+            command += ['--compare-mm-prepared', args.compare_mm_prepared]
+        if args.allow_trailing_timestamp:
+            command.append('--allow-trailing-timestamp')
+        execute(command, ROOT, False)
+        return
     if args.action == 'verify':
         verify()
         return
@@ -201,14 +245,19 @@ def main():
         download(args)
         return
     model = MODELS[args.model]
+    if args.input_mode == 'rgb' and args.encoder_assets:
+        parser.error('RGB mode does not use --encoder-assets')
     runtime = runtime_for(model['runtime'])
     gpus = getattr(args, 'gpus', None) or (
         1 if getattr(args, 'smoke_test', False) else model['training_gpus'])
     if model['runtime'] != 'qwen' and gpus != 1:
         parser.error('InternVL and Gemma support one training GPU; Qwen supports one or two')
     if args.action == 'train':
-        if args.smoke_test and Path(args.training_root).resolve() == ROOT / 'runs':
-            args.training_root = str(ROOT / 'outputs/smoke-runs')
+        if args.batch_size is not None and args.batch_size < 1:
+            parser.error('--batch-size must be positive')
+        if args.training_root is None:
+            base = ROOT / ('outputs/smoke-runs' if args.smoke_test else 'runs')
+            args.training_root = str(base / 'rgb' if args.input_mode == 'rgb' else base)
         stages = ('stage1', 'stage2') if args.stage == 'both' else (args.stage,)
         for stage in stages:
             config = configuration(args, stage, gpus)
@@ -220,10 +269,13 @@ def main():
             execute(command, runtime, args.dry_run)
         return
     config = configuration(args, 'eval', 1)
-    output = ROOT / 'outputs' / args.model / 'test'
+    output_root = ROOT / 'outputs/rgb' if args.input_mode == 'rgb' else ROOT / 'outputs'
+    output = output_root / args.model / 'test'
     if args.action == 'predict':
         candidates = [ROOT / 'runs' / args.model / 'stage2/adapter',
                       ROOT / 'checkpoints' / args.model / 'stage2/adapter']
+        if args.input_mode == 'rgb':
+            candidates = [ROOT / 'runs/rgb' / args.model / 'stage2/adapter']
         checkpoint = Path(args.checkpoint).resolve() if args.checkpoint else next(
             (p for p in candidates if p.exists()), candidates[-1])
         command = [sys.executable, '-u', '-m', 'vista_mm.predict', '--config', str(config),
@@ -243,7 +295,7 @@ def main():
                    '--split', 'test', '--rubric', str(ROOT / 'rubric.json'), '--judge-profile', str(profile),
                    '--output-dir', str(Path(args.output_dir).resolve() if args.output_dir else output / 'judge3'),
                    '--key-files', *args.key_files, '--concurrency', str(args.concurrency),
-                   '--max-cost-usd', str(args.max_cost_usd), '--model-label', f'VISTA {args.model}',
+                   '--max-cost-usd', str(args.max_cost_usd), '--model-label', f'VISTA {args.input_mode} {args.model}',
                    '--runtime-settings', str(no_overrides)]
         if args.csv:
             command += ['--csv', str(Path(args.csv).resolve())]

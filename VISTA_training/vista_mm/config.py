@@ -109,6 +109,7 @@ class Experiment:
     revision: str = ""  # immutable model commit, required for a new run
     prepared: str = "data/prepared"
     output_dir: str = "runs/default"
+    input_mode: str = "multimodal"
     sensor: dict = field(default_factory=dict)
     seed: int = 17
     train_mode: str = "full"  # full LLM, lora, or alignment-only
@@ -152,6 +153,14 @@ class Experiment:
 
     def __post_init__(self):
         self.sensor = SensorConfig(**self.sensor).to_dict()
+        if self.input_mode not in ("rgb", "multimodal"):
+            raise ValueError("input_mode must be rgb or multimodal")
+        if self.input_mode == "rgb" and (
+            self.sensor["modalities"] or self.sensor["sensor_token_id"] is not None
+            or self.sensor_warmup_steps or self.encoder_assets
+            or self.gradient_modulation != "none" or self.train_mode != "lora"
+        ):
+            raise ValueError("RGB mode requires LoRA without sensor modalities, tokens, warmup or encoder assets")
         if self.initial_adapter and (
             self.train_mode != "lora" or self.initial_checkpoint
         ):

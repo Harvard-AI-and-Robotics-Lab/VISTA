@@ -69,6 +69,9 @@ def verify_prepared(root, selected_modalities=(), min_coverage=0):
     if (root / "INCOMPLETE.json").exists():
         raise ValueError("Preparation did not finish")
     manifest = json.loads((root / "manifest.json").read_text())
+    from .rgb_data import RGB_SCHEMA, verify_rgb
+    if manifest["schema"] == RGB_SCHEMA:
+        return verify_rgb(root, selected_modalities), {"modalities": {}}
     if manifest["schema"] not in (SCHEMA, NATIVE_SCHEMA):
         raise ValueError("Feature schema version mismatch")
     for filename, expected in manifest["checksums"].items():
@@ -298,6 +301,13 @@ class VistaDataset(Dataset):
             frame_count=frame_count,
             sensors=sensors,
         )
+
+
+def make_dataset(root, split, config, **kwargs):
+    if config.input_mode == "rgb":
+        from .rgb_data import RGBDataset
+        return RGBDataset(root, split, config, **kwargs)
+    return VistaDataset(root, split, config, **kwargs)
 
 
 class VistaCollator:

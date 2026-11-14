@@ -6,6 +6,9 @@ import torch
 from transformers import (
     AutoConfig,
     AutoProcessor,
+    InternVLForConditionalGeneration,
+    Qwen3VLForConditionalGeneration,
+    Gemma3ForConditionalGeneration,
     Trainer,
     TrainerCallback,
     TrainingArguments,
@@ -14,7 +17,7 @@ from transformers import (
 from .config import Experiment, SensorConfig
 from .data import (
     VistaCollator,
-    VistaDataset,
+    make_dataset,
     verify_prepared,
     SynchronizedQwenProcessor,
 )
@@ -49,6 +52,8 @@ def validate_adapter_initialization(config):
     path = Path(config.initial_adapter)
     saved = AutoConfig.from_pretrained(path)
     experiment = saved.vista_experiment
+    if experiment.get("input_mode", "multimodal") != config.input_mode:
+        raise ValueError("Initial adapter input mode differs from this experiment")
     for name in ("model_id", "revision", "lora_rank", "lora_alpha", "lora_dropout"):
         if experiment[name] != getattr(config, name):
             raise ValueError(f"Initial adapter differs in {name}")
@@ -90,6 +95,8 @@ def load_backbone(config, checkpoint=None, training=True):
         return (model, processor)
     sensor_cfg = SensorConfig(**config.sensor)
     use_sensors = bool(sensor_cfg.modalities)
+    if use_sensors != (config.input_mode == "multimodal"):
+        raise ValueError("Input mode and sensor modalities disagree")
     source = checkpoint or config.model_id
     revision = None if checkpoint else config.revision
     model_config = AutoConfig.from_pretrained(source, revision=revision)
@@ -122,11 +129,13 @@ def load_backbone(config, checkpoint=None, training=True):
         model_config.vista_sensor = sensor_cfg.to_dict()
     model_config.vista_experiment = config.to_dict()
     model_config.vista_original_vocab_size = model_config.text_config.vocab_size
-    if not use_sensors:
-        raise ValueError("This suite runs full VISTA only")
     cls = {"internvl": VistaInternVL, "qwen3_vl": VistaQwen3VL, "gemma3": VistaGemma3}[
         model_config.model_type
     ]
+    if not use_sensors:
+        cls = {"internvl": InternVLForConditionalGeneration,
+               "qwen3_vl": Qwen3VLForConditionalGeneration,
+               "gemma3": Gemma3ForConditionalGeneration}[model_config.model_type]
     model = cls.from_pretrained(
         source,
         revision=revision,
@@ -198,6 +207,11 @@ def configure_trainable(model, config):
         raise ValueError(
             "No trainable parameters; RGB-only alignment mode is not a training experiment"
         )
+    if config.input_mode == "rgb":
+        unexpected = [name for name, p in model.named_parameters()
+                      if p.requires_grad and "lora_" not in name]
+        if unexpected or hasattr(model.get_base_model(), "sensor_encoder"):
+            raise ValueError(f"RGB mode must train language LoRA only: {unexpected}")
     return model
 
 
@@ -306,6 +320,8 @@ def main():
             "environment": environment_record(),
             "config_sha256": sha256(args.config),
             "fixed_final_step": cfg.max_steps,
+            "input_mode": cfg.input_mode,
+            "planned_lora_update_steps": cfg.max_steps - cfg.sensor_warmup_steps,
         },
     )
     training_args = TrainingArguments(
@@ -349,7 +365,7 @@ def main():
     trainer = VistaTrainer(
         model=model,
         args=training_args,
-        train_dataset=VistaDataset(cfg.prepared, "train", cfg, training=True),
+        train_dataset=make_dataset(cfg.prepared, "train", cfg, training=True),
         data_collator=VistaCollator(processor, cfg, training=True),
         processing_class=processor,
         sensor_lr=cfg.sensor_lr,

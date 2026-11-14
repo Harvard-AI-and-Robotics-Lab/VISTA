@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from vista_mm.config import Experiment
-from vista_mm.data import VistaDataset
+from vista_mm.data import make_dataset
 from vista_mm.evaluate import task_group
 from vista_mm.judge3 import Judge3Rubric, PAPER_ENGINE_PATH, PAPER_DATASET_PATH
 from vista_mm.judge_profile import load_profile, request_settings
@@ -75,7 +75,7 @@ def main():
     rubric = Judge3Rubric(args.rubric)
     config = Experiment.load(args.config)
     config.sensor = {"modalities": []}
-    dataset = VistaDataset(config.prepared, args.split, config)
+    dataset = make_dataset(config.prepared, args.split, config)
     if dataset.manifest.get("smoke_fixture") or config.num_frames != 8:
         raise ValueError("Requires a complete prepared split and eight frames")
     expected = {r["item_id"]: r for r in dataset.items}
@@ -98,7 +98,7 @@ def main():
         )
     if sha256(annotation_csv) != dataset.manifest["annotation_sha256"][args.split]:
         raise ValueError("Annotation CSV differs from the prepared dataset")
-    paper_items = rubric.load_items(annotation_csv, pred_path)
+    paper_items = rubric.load_items(annotation_csv, pred_path, input_mode=config.input_mode)
     if len(paper_items) != len(expected) or {r["item_id"] for r in paper_items} != set(expected):
         raise ValueError("Paper adapter and prepared split contain different tasks")
     prepared_indices = {item["item_id"]: i for i, item in enumerate(dataset.items)}
@@ -115,6 +115,7 @@ def main():
         raise ValueError("Prediction provenance mismatch")
 
     protocol = {
+        "input_mode": config.input_mode,
         **profile,
         "rubric_version": rubric.contract["version"],
         "rubric_sha256": sha256(args.rubric),

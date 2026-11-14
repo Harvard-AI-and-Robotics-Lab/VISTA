@@ -58,5 +58,16 @@ class Judge3Rubric:
             frame if isinstance(frame, Image.Image) else Image.fromarray(frame)
         )}} for frame in frames]
 
-    def load_items(self, csv_path, predictions):
+    def load_items(self, csv_path, predictions, input_mode="multimodal"):
+        if input_mode == "rgb":
+            from .rgb_data import annotation_items
+            from .provenance import read_jsonl
+            _, items = annotation_items(csv_path, "test")
+            rows = read_jsonl(predictions)
+            predicted = {f"{r['clip_id']}|{r['task_type']}": r["prediction"] for r in rows}
+            if len(rows) != len(predicted) or set(predicted) != {i["item_id"] for i in items}:
+                raise ValueError("RGB predictions and CSV tasks differ")
+            return [dict(i, prediction=predicted[i["item_id"]],
+                         qtype="scene_description" if i["task_type"] == "scene_description"
+                         else task_group(i["task_type"])) for i in items]
         return PAPER_DATASET.load_items(csv_path, predictions)

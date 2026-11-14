@@ -31,3 +31,8 @@ torchaudio = { index = "pytorch-cu128" }
 
 [tool.uv]
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["gpu: small real-architecture training checks requiring CUDA"]

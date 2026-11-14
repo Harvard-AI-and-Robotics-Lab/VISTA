@@ -166,7 +166,9 @@ class VistaPeftModel(PeftModelForCausalLM):
                         "format": "vista-frozen-assets-v1",
                         "sensor_token_id": token,
                         "embedding_indices": indices,
-                        "reused": "Pinned pretrained backbone and verified BEATs/PRIMUS assets; embeddings frozen, all added token rows saved separately",
+                        "reused": "Pinned pretrained backbone; language LoRA adapters only"
+                        if getattr(core.config, "vista_experiment", {}).get("input_mode") == "rgb"
+                        else "Pinned pretrained backbone and verified BEATs/PRIMUS assets; embeddings frozen, all added token rows saved separately",
                     },
                     indent=2,
                 )

@@ -3,8 +3,8 @@
     "native": {
       "vista_mm/__init__.py": "574fd27cd3769e2aed0a31c741d632b2ef0c41e0604b94c9c804a1efaa6b3989",
       "vista_mm/bottleneck.py": "5ffe30904a4200139b19c878be3b70405339dddd0bd7b7a5218970b6560217e9",
-      "vista_mm/config.py": "47bf7ce62734444238cb4389f21d167d095eb21c60053bf34a95911e10e6f34a",
-      "vista_mm/data.py": "3b1c198876616e4acb0168b02dd8d021652a430f68850e5ce276ada8a6174406",
+      "vista_mm/config.py": "d29bb1ae4beff980027053b345f6b2e98aa22094f100670a904cafce88efb95f",
+      "vista_mm/data.py": "c97618164119584b75de735f26ab7e7c4c543f417773bcdfa7b4a56322ec8fd2",
       "vista_mm/encoder_assets.py": "58fb0c049f641e1f022907d177cb1c61d91baaaf6e5de472822ea5d044fbae6f",
       "vista_mm/encoders.py": "8583ce57d347e05f071b1ca99b038843d3b7548a04d80277ddfdbbf0058bbda8",
       "vista_mm/evaluate.py": "b19bdc99fd5b1de71c9e296e657fbf1666988a1467ec1f4c8c8000423a987cc8",
@@ -12,27 +12,28 @@
       "vista_mm/fusion.py": "d054ad2f4f83beaf67642ec476e5400a55afef46ee8fab774164e8d3b5dd4553",
       "vista_mm/gemma_model.py": "5eb1442e400daf7b633b64c468952e3218f5b8c4b3cc9cea0dff5bcb02f61f3d",
       "vista_mm/internvl_model.py": "2fd4f5de44401bb091033d69dcf4ba036ddd14d95fbd6b1c6dfcdb914eecc99f",
-      "vista_mm/judge3.py": "708d7f08c5519602e2a0d0ac9a4e2bdd7c82c62edffd42639593857871c52884",
+      "vista_mm/judge3.py": "c58f84aacb5ef634ee13fb31563b3160dee28fd4454f9ef337b4551d9cd8af13",
       "vista_mm/judge_profile.py": "c22cd1e7aab963c05b2e51862f97e06b4d3993a733250bcfb792a32fdfc49145",
       "vista_mm/judge_rubric.py": "9a0579a0504323ed88a32f59bbd01453b939d77b02ac741e5e7199dacdc189c3",
-      "vista_mm/lora.py": "4f4d0cbbf22a729c488319c6ac953e86a41a34fd376735f03fb3af8fb0a9d0b9",
+      "vista_mm/lora.py": "cbee3fc358089495c097a9c986066d387b5cc34e1cb1e152f8362a4f4b97012c",
       "vista_mm/loss.py": "38a38ead47851ba4d317aae0b82c16aa5c7e13f45be09ad0edb17cc072168992",
       "vista_mm/manifest.py": "52289be042132ceb58217254d45f24b0b4ba1c8cb2682adddf90f7a572ba2c8d",
       "vista_mm/metrics.py": "c8fa76c4d7c12858ce260fc8791b5e601eed6db48ce390cecf986289b045db6c",
       "vista_mm/model.py": "12d47a2c3acda59b0d8012dda9e754a6d8cf378950e36c0e066dc5bb5aff1a82",
       "vista_mm/native_features.py": "9026c63a8efb1ee08ff70c7b7dbc37afbcb6adcd2dd1fb62b703e490238331d7",
       "vista_mm/openrouter_judge.py": "86fbf6b965949e5e336142da7cf270bb067ec8f47c9c8eb2640a67a981cae218",
-      "vista_mm/predict.py": "2195c7a46a949aeb2dbf6bb8fd42ec3a4ea11e19d9ca3e944882dd5ab779d56a",
+      "vista_mm/predict.py": "41b686d968bd5d7ef79be84849305f8cb2af60b2160bf2cfa7eb3b7eab92ed1a",
       "vista_mm/primus.py": "b1cdbd871aa787077827684467334e42c08d00dea0c628881eff5975b2919cbc",
       "vista_mm/provenance.py": "32e5adc71d14d4c476f063485762a6ae62cee08e624113b0b140be9dbc8d9106",
-      "vista_mm/train.py": "fe19566b8a352af5286ae2333f807ac47eaf937b3520657dfd2939f4d8c29260"
+      "vista_mm/rgb_data.py": "222684b0669404002215a79bd6cfac2ee72e769ab19c00d362b81b6215a9100c",
+      "vista_mm/train.py": "f5ad822b3fc243aae9e630cf6eade531b19b96eff8a7a557030be63444e0acec"
     },
     "qwen": {
       "vista_mm/__init__.py": "574fd27cd3769e2aed0a31c741d632b2ef0c41e0604b94c9c804a1efaa6b3989",
       "vista_mm/attention.py": "3169435c26191f69cfeb4a67b5bc29899218671122a2e7f71c69705d2f542df9",
       "vista_mm/bottleneck.py": "5ffe30904a4200139b19c878be3b70405339dddd0bd7b7a5218970b6560217e9",
-      "vista_mm/config.py": "e32b1c067e537372b2e8fbf29cc7743f1b5c8d88723567f164cbcf4a5dfb4d5b",
-      "vista_mm/data.py": "f72b240f6d2e4805cc1e780b6088a9bbc1fe4f9c767be1c0ba216bf62972c75f",
+      "vista_mm/config.py": "961f423822bc89f17aab255c1084fdd2bc1dd60a2281d198546a42905505601f",
+      "vista_mm/data.py": "4379c0b0ffbc44068ce1c1662d064829e331c4ceeed8407244485ca25f5101c1",
       "vista_mm/encoder_assets.py": "58fb0c049f641e1f022907d177cb1c61d91baaaf6e5de472822ea5d044fbae6f",
       "vista_mm/encoders.py": "8583ce57d347e05f071b1ca99b038843d3b7548a04d80277ddfdbbf0058bbda8",
       "vista_mm/evaluate.py": "b19bdc99fd5b1de71c9e296e657fbf1666988a1467ec1f4c8c8000423a987cc8",
@@ -40,20 +41,21 @@
       "vista_mm/fusion.py": "d054ad2f4f83beaf67642ec476e5400a55afef46ee8fab774164e8d3b5dd4553",
       "vista_mm/gemma_model.py": "5eb1442e400daf7b633b64c468952e3218f5b8c4b3cc9cea0dff5bcb02f61f3d",
       "vista_mm/internvl_model.py": "2fd4f5de44401bb091033d69dcf4ba036ddd14d95fbd6b1c6dfcdb914eecc99f",
-      "vista_mm/judge3.py": "708d7f08c5519602e2a0d0ac9a4e2bdd7c82c62edffd42639593857871c52884",
+      "vista_mm/judge3.py": "c58f84aacb5ef634ee13fb31563b3160dee28fd4454f9ef337b4551d9cd8af13",
       "vista_mm/judge_profile.py": "c22cd1e7aab963c05b2e51862f97e06b4d3993a733250bcfb792a32fdfc49145",
       "vista_mm/judge_rubric.py": "9a0579a0504323ed88a32f59bbd01453b939d77b02ac741e5e7199dacdc189c3",
-      "vista_mm/lora.py": "4f4d0cbbf22a729c488319c6ac953e86a41a34fd376735f03fb3af8fb0a9d0b9",
+      "vista_mm/lora.py": "cbee3fc358089495c097a9c986066d387b5cc34e1cb1e152f8362a4f4b97012c",
       "vista_mm/loss.py": "38a38ead47851ba4d317aae0b82c16aa5c7e13f45be09ad0edb17cc072168992",
       "vista_mm/manifest.py": "52289be042132ceb58217254d45f24b0b4ba1c8cb2682adddf90f7a572ba2c8d",
       "vista_mm/metrics.py": "c8fa76c4d7c12858ce260fc8791b5e601eed6db48ce390cecf986289b045db6c",
       "vista_mm/model.py": "966046e7e24224c93ac3500115f2feed4ba89027d789613f43597296ca42d317",
       "vista_mm/native_features.py": "9026c63a8efb1ee08ff70c7b7dbc37afbcb6adcd2dd1fb62b703e490238331d7",
       "vista_mm/openrouter_judge.py": "86fbf6b965949e5e336142da7cf270bb067ec8f47c9c8eb2640a67a981cae218",
-      "vista_mm/predict.py": "795ec4dc465c1398ce8f0845d960d9922866ea4a548673c36e0a261a17fd1ac5",
+      "vista_mm/predict.py": "70f3222b9ff4d178773103b03bda6b1226dd71d5042c9f75fcbdaf1f058add5b",
       "vista_mm/primus.py": "b1cdbd871aa787077827684467334e42c08d00dea0c628881eff5975b2919cbc",
       "vista_mm/provenance.py": "32e5adc71d14d4c476f063485762a6ae62cee08e624113b0b140be9dbc8d9106",
-      "vista_mm/train.py": "216ac490addda47f1f80845263049face991ff4271a75cdaa9fed8b5f79cffc3"
+      "vista_mm/rgb_data.py": "222684b0669404002215a79bd6cfac2ee72e769ab19c00d362b81b6215a9100c",
+      "vista_mm/train.py": "972afd35b48002297051202df73e53d06e8ac0b7119755d6174c304061aac92e"
     }
   },
   "config_digests": {
@@ -91,9 +93,9 @@
     "vista_mm/third_party/beats/modules.py"
   ],
   "method": "question-conditioned-sensor-fusion-with-lora",
-  "judge_sha256": "af0430c310134f5b7a8e99b450d2cf35abf7e92058a0abc3f0606116fda89734",
+  "judge_sha256": "ab8b09ba205aee6e5175986842445fc538f52245fa10c35806ea17dca14c6b7d",
   "rubric_sha256": "abc7445e36ce18be8dccd2b233a2b6401a0e2b4ca2c607063962afac908624af",
-  "qwen_patch_sha256": "962fdf9d1cedfe66c7cfc52782a99b02a15072fb14cf0691505da1813ad81132",
+  "qwen_patch_sha256": "ce8100a7c51312744feec365df939aaec0fbb59a5b662410a9d1ddda0dcc7e3c",
   "models_sha256": "c20f618cee7fd2c0cc9ba4866e371d2e96f004330722be9efe9a60b41adfe976",
   "judge": {
     "model": "openai/gpt-6-luna",
@@ -125,5 +127,36 @@
     "benchmark_models_sha256": "4396a21b7e64f9954cef3d40f532c30a98ece7af9b2660b96b5d7c3c83f5ea0d",
     "system_message": false,
     "num_frames": 8
-  }
+  },
+  "rgb_config_digests": {
+    "internvl3_2b": {
+      "stage1": "840851d486caad41f01be7df3945f27ae96fd7178b095e9129244f117a150b7c",
+      "stage2": "e77bce4f5062a23fb530ffa86046bb63ab44adb208eec9e94b3c63387e6df765",
+      "eval": "cb41bb3393e16ce96020b0551baa35d4790f8ee19f42aeb55f767e8049aa3365"
+    },
+    "internvl3_8b": {
+      "stage1": "ff28507d1b04dc24ef56a7315e4b4f4525e55e80babec71aee20743d213f3239",
+      "stage2": "a12ecb9b3bcbbf9c26004fdc686ce5bf625ab1efdc6f91bb31fdb6f307b0248b",
+      "eval": "7a96c33ac672bacea7241372a28ddffc8385bb550493e36bb913350833b0587c"
+    },
+    "qwen3_vl_4b": {
+      "stage1": "f25ae0c9acf377842077d80d1f9e35e0cafeec4b6056636837ff937881751728",
+      "stage2": "6641801bcca6bfb25b61eda24febd56d62fc6d429f787f3adccbe74d527376e7",
+      "eval": "c41a33003505a6f90b0ff4463b41baf8d164efea2686d430661d4bbab2ca0c50"
+    },
+    "qwen3_vl_8b": {
+      "stage1": "551f5bb30490b71989943c6a5570c1b6d868c2f01812c872e5a80c3f95f83cde",
+      "stage2": "a970447c3476c9977ad9cd3567ba98e488a6d495b54db4b8f208200b782580f1",
+      "eval": "6b7be300bf2cd67e828ea008e48479ae020225049d2a814e77afa99fba4fc55b"
+    },
+    "gemma3_12b": {
+      "stage1": "cdbc33d49f51dfc7e5d203e7fd27d4bed243b447681be74b81651d0fe899d643",
+      "stage2": "695db482ed2de330472964713d20af27ac2d54f854c5abe20545ab03ff29ec56",
+      "eval": "3db6224374f0a833265c64c0cf44915b6b1bc344e9ba9ef71c6d4b4f9708b535"
+    }
+  },
+  "input_modes": [
+    "multimodal",
+    "rgb"
+  ]
 }

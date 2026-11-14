@@ -9,7 +9,7 @@ import torch
 from transformers import set_seed
 
 from .config import Experiment, SensorConfig
-from .data import VistaCollator, VistaDataset
+from .data import VistaCollator, make_dataset
 from .encoder_assets import resolve_encoder_configuration
 from .provenance import atomic_json, digest, read_jsonl, sha256
 from .train import load_backbone
@@ -51,7 +51,7 @@ def main():
     resolve_encoder_configuration(config, args.checkpoint)
     set_seed(config.seed)
     torch.backends.cudnn.benchmark = False
-    dataset = VistaDataset(
+    dataset = make_dataset(
         config.prepared,
         args.split,
         config,
@@ -70,6 +70,8 @@ def main():
     if not (checkpoint.parent / "experiment.json").exists():
         raise ValueError("Checkpoint must belong to a recorded VISTA run")
     trained = json.loads((checkpoint.parent / "experiment.json").read_text())
+    if trained.get("input_mode", "multimodal") != config.input_mode:
+        raise ValueError("Inference input mode differs from training")
     # Normalize optional sensor fields before comparing checkpoint metadata.
     trained["sensor"] = SensorConfig(**trained["sensor"]).to_dict()
     for key in (
@@ -91,6 +93,7 @@ def main():
             "Inference preparation/normalization differs from training"
         )
     protocol = {
+        "input_mode": config.input_mode,
         "model_id": config.model_id,
         "revision": config.revision,
         "seed": config.seed,

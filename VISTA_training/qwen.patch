@@ -1,4 +1,4 @@
---- /dev/null
+--- a/vista_mm/attention.py
 +++ b/vista_mm/attention.py
 @@ -0,0 +1,34 @@
 +"""Use PyTorch's causal SDPA kernels without quadratic masks for padded batches."""
@@ -37,7 +37,7 @@
 +    model.model.language_model.config._attn_implementation='vista_padded_sdpa'
 --- a/vista_mm/config.py
 +++ b/vista_mm/config.py
-@@ -112,6 +112,7 @@
+@@ -113,6 +113,7 @@
      sensor: dict = field(default_factory=dict)
      seed: int = 17
      train_mode: str = "full"  # full LLM, lora, or alignment-only
@@ -72,7 +72,7 @@
      return content, images
  
  
-@@ -324,6 +342,36 @@
+@@ -334,6 +352,36 @@
                  ],
              },
          ]
@@ -147,7 +147,7 @@
          self.sensor_encoder.apply(self._init_weights)
 --- a/vista_mm/predict.py
 +++ b/vista_mm/predict.py
-@@ -78,6 +78,7 @@
+@@ -80,6 +80,7 @@
          "sensor",
          "train_mode",
          "num_frames",
@@ -157,7 +157,7 @@
      ):
 --- a/vista_mm/train.py
 +++ b/vista_mm/train.py
-@@ -1,11 +1,14 @@
+@@ -1,6 +1,8 @@
  """Full VISTA training for InternVL3, Qwen3-VL and Gemma 3."""
  
  import argparse
@@ -166,13 +166,7 @@
  from pathlib import Path
  import torch
  from transformers import (
-     AutoConfig,
-     AutoProcessor,
-+    InternVLForConditionalGeneration,
-     Trainer,
-     TrainerCallback,
-     TrainingArguments,
-@@ -25,6 +28,7 @@
+@@ -28,6 +30,7 @@
  from .model import SENSOR_TOKEN, VistaQwen3VL
  from .gemma_model import VistaGemma3
  from .loss import response_statistics
@@ -180,7 +174,7 @@
  from .provenance import atomic_json, environment_record, sha256
  
  
-@@ -34,13 +38,13 @@
+@@ -37,13 +40,13 @@
      def __init__(self, steps):
          self.steps = steps
  
@@ -201,32 +195,21 @@
          return control
  
  
-@@ -122,11 +126,13 @@
-         model_config.vista_sensor = sensor_cfg.to_dict()
-     model_config.vista_experiment = config.to_dict()
-     model_config.vista_original_vocab_size = model_config.text_config.vocab_size
--    if not use_sensors:
--        raise ValueError("This suite runs full VISTA only")
-     cls = {"internvl": VistaInternVL, "qwen3_vl": VistaQwen3VL, "gemma3": VistaGemma3}[
-         model_config.model_type
-     ]
-+    if not use_sensors:
-+        if model_config.model_type != "internvl":
-+            raise ValueError("RGB-only ablations currently support InternVL only")
-+        cls = InternVLForConditionalGeneration
-     model = cls.from_pretrained(
-         source,
-         revision=revision,
-@@ -134,6 +140,8 @@
+@@ -143,6 +146,13 @@
          torch_dtype=torch.bfloat16,
          attn_implementation=config.attention,
      )
++    if not use_sensors and model_config.model_type == "qwen3_vl":
++        import types
++        from .model import linear_patch_projection
++        patch = model.model.visual.patch_embed
++        patch.forward = types.MethodType(linear_patch_projection, patch)
 +    enable_padded_sdpa(model)
 +    processor.tokenizer.model_max_length = config.max_length
      if use_sensors:
          if checkpoint is None:
              initialize_frontends(model, config)
-@@ -255,7 +263,7 @@
+@@ -269,7 +279,7 @@
                  from deepspeed.ops.adam import DeepSpeedCPUAdam
  
                  optimizer_cls = DeepSpeedCPUAdam
@@ -235,7 +218,7 @@
          return self.optimizer
  
      def compute_loss(
-@@ -263,8 +271,12 @@
+@@ -277,8 +287,12 @@
      ):
          inputs = dict(inputs)
          labels = inputs.pop("labels")
@@ -250,7 +233,7 @@
          outputs.loss = loss
          return (loss, outputs) if return_outputs else loss
  
-@@ -274,6 +286,11 @@
+@@ -288,6 +302,11 @@
      parser.add_argument("--config", required=True)
      args = parser.parse_args()
      cfg = Experiment.load(args.config)
@@ -262,7 +245,7 @@
      if (
          cfg.gradient_modulation != "none"
          or cfg.smoke_seconds
-@@ -289,25 +306,28 @@
+@@ -303,27 +322,30 @@
      )
      assets = resolve_encoder_configuration(cfg, cfg.initial_adapter)
      root = Path(cfg.output_dir)
@@ -283,6 +266,8 @@
 -            "environment": environment_record(),
 -            "config_sha256": sha256(args.config),
 -            "fixed_final_step": cfg.max_steps,
+-            "input_mode": cfg.input_mode,
+-            "planned_lora_update_steps": cfg.max_steps - cfg.sensor_warmup_steps,
 -        },
 -    )
 +    if rank == 0:
@@ -303,6 +288,8 @@
 +                "environment": environment_record(),
 +                "config_sha256": sha256(args.config),
 +                "fixed_final_step": cfg.max_steps,
++                "input_mode": cfg.input_mode,
++                "planned_lora_update_steps": cfg.max_steps - cfg.sensor_warmup_steps,
 +            },
 +        )
 +    if world > 1:
@@ -310,7 +297,7 @@
      training_args = TrainingArguments(
          output_dir=str(root),
          seed=cfg.seed,
-@@ -323,9 +343,12 @@
+@@ -339,9 +361,12 @@
          max_grad_norm=cfg.max_grad_norm,
          bf16=True,
          tf32=True,
@@ -324,7 +311,7 @@
          save_strategy="no",
          logging_steps=1,
          logging_nan_inf_filter=False,
-@@ -337,15 +360,16 @@
+@@ -353,15 +378,16 @@
      )
      model, processor = load_backbone(cfg)
      model = configure_trainable(model, cfg)
@@ -350,7 +337,7 @@
      trainer = VistaTrainer(
          model=model,
          args=training_args,
-@@ -362,19 +386,23 @@
+@@ -378,19 +404,23 @@
          training_result = trainer.train()
      trainer.save_metrics("train", training_result.metrics)
      trainer.save_model(str(root / "adapter"))
