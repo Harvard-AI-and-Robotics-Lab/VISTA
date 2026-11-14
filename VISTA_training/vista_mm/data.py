@@ -310,6 +310,69 @@ def make_dataset(root, split, config, **kwargs):
     return VistaDataset(root, split, config, **kwargs)
 
 
+# Default system message that InternVL3's remote-code ``chat()`` (template
+# ``internvl2_5``) prepends during zero-shot inference. The -hf chat template omits it.
+INTERNVL_ZERO_SHOT_SYSTEM = (
+    "你是书生·万象，英文名是InternVL，是由上海人工智能实验室、清华大学及多家合作单位联合开发的多模态大语言模型。"
+)
+
+
+def zero_shot_rgb_inputs(processor, frames, prompt):
+    """RGB-only prompt and pixels built exactly as VISTA_benchmark/models.py does zero-shot.
+
+    InternVL: remote-code ``chat()`` format; the eight frames are 448x448 PIL-bicubic
+    patches of one ``<image>`` placeholder, after the default InternVL system message.
+    Qwen3-VL and Gemma 3: eight unlabeled images followed by the task prompt, with the
+    processor's default resolution and a single Gemma BOS.
+    """
+    family = processor.__class__.__name__
+    if family == "InternVLProcessor":
+        import torchvision.transforms as T
+        from PIL import Image
+        from torchvision.transforms.functional import InterpolationMode
+
+        transform = T.Compose([
+            T.Resize((448, 448), interpolation=InterpolationMode.BICUBIC),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        pixel_values = torch.stack([transform(Image.fromarray(frame)) for frame in frames])
+        image = "<img>" + "<IMG_CONTEXT>" * (processor.image_seq_length * len(frames)) + "</img>"
+        text = (
+            f"<|im_start|>system\n{INTERNVL_ZERO_SHOT_SYSTEM}<|im_end|>\n"
+            f"<|im_start|>user\n{image}\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+        )
+        input_ids = processor.tokenizer(
+            text, add_special_tokens=False, return_tensors="pt"
+        )["input_ids"]
+        return {
+            "input_ids": input_ids,
+            "attention_mask": torch.ones_like(input_ids),
+            "pixel_values": pixel_values,
+        }
+    content = [{"type": "image"} for _ in frames] + [{"type": "text", "text": prompt}]
+    text = processor.apply_chat_template(
+        [{"role": "user", "content": content}], tokenize=False, add_generation_prompt=True
+    )
+    if family == "Gemma3Processor":
+        # The chat template already emits <bos>; the tokenizer must not add another.
+        inputs = processor(
+            text=[text], images=list(frames), return_tensors="pt",
+            add_special_tokens=False, images_kwargs={"do_pan_and_scan": False},
+        )
+        bos = processor.tokenizer.bos_token_id
+        ids = inputs["input_ids"][0]
+        if ids[0] != bos or ids[1] == bos:
+            raise ValueError("Gemma RGB prompt must start with exactly one BOS")
+        return inputs
+    if family not in ("Qwen3VLProcessor", "SynchronizedQwenProcessor"):
+        raise ValueError(f"Unsupported RGB processor: {family}")
+    inputs = processor(text=[text], images=list(frames), return_tensors="pt")
+    inputs.pop("token_type_ids", None)
+    inputs.pop("mm_token_type_ids", None)
+    return inputs
+
+
 class VistaCollator:
     def __init__(self, processor, config, training=True):
         self.processor, self.config, self.training = processor, config, training
@@ -325,6 +388,14 @@ class VistaCollator:
             else ""
         )
         prompt = build_prompt(example)
+        if self.config.input_mode == "rgb":
+            # RGB-only SFT uses the zero-shot benchmark's exact visual prompt format.
+            inputs = zero_shot_rgb_inputs(self.processor, example["frames"], prompt)
+            if len(inputs["input_ids"][0]) >= self.config.max_length:
+                raise ValueError(
+                    f"{example['item_id']}: RGB prompt exceeds max_length"
+                )
+            return inputs
         messages = [
             {
                 "role": "user",
