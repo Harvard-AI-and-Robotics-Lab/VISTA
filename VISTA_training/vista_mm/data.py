@@ -317,7 +317,21 @@ INTERNVL_ZERO_SHOT_SYSTEM = (
 )
 
 
-def zero_shot_rgb_inputs(processor, frames, prompt):
+def internvl_rgb_pixel_values(frames):
+    """The benchmark's fixed RGB transform, retained in FP32 for lossless caching."""
+    import torchvision.transforms as T
+    from PIL import Image
+    from torchvision.transforms.functional import InterpolationMode
+
+    transform = T.Compose([
+        T.Resize((448, 448), interpolation=InterpolationMode.BICUBIC),
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    return torch.stack([transform(Image.fromarray(frame)) for frame in frames])
+
+
+def zero_shot_rgb_inputs(processor, frames, prompt, pixel_values=None):
     """RGB-only prompt and pixels built exactly as VISTA_benchmark/models.py does zero-shot.
 
     InternVL: remote-code ``chat()`` format; the eight frames are 448x448 PIL-bicubic
@@ -326,18 +340,14 @@ def zero_shot_rgb_inputs(processor, frames, prompt):
     processor's default resolution and a single Gemma BOS.
     """
     family = processor.__class__.__name__
+    if pixel_values is not None and family != "InternVLProcessor":
+        raise ValueError("The RGB pixel cache currently requires InternVL")
     if family == "InternVLProcessor":
-        import torchvision.transforms as T
-        from PIL import Image
-        from torchvision.transforms.functional import InterpolationMode
-
-        transform = T.Compose([
-            T.Resize((448, 448), interpolation=InterpolationMode.BICUBIC),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        pixel_values = torch.stack([transform(Image.fromarray(frame)) for frame in frames])
-        image = "<img>" + "<IMG_CONTEXT>" * (processor.image_seq_length * len(frames)) + "</img>"
+        if pixel_values is None:
+            pixel_values = internvl_rgb_pixel_values(frames)
+        if pixel_values.dtype != torch.float32 or pixel_values.shape != (8, 3, 448, 448):
+            raise ValueError("InternVL RGB pixels must be eight 448x448 FP32 frames")
+        image = "<img>" + "<IMG_CONTEXT>" * (processor.image_seq_length * len(pixel_values)) + "</img>"
         text = (
             f"<|im_start|>system\n{INTERNVL_ZERO_SHOT_SYSTEM}<|im_end|>\n"
             f"<|im_start|>user\n{image}\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
@@ -390,7 +400,10 @@ class VistaCollator:
         prompt = build_prompt(example)
         if self.config.input_mode == "rgb":
             # RGB-only SFT uses the zero-shot benchmark's exact visual prompt format.
-            inputs = zero_shot_rgb_inputs(self.processor, example["frames"], prompt)
+            inputs = zero_shot_rgb_inputs(
+                self.processor, example.get("frames"), prompt,
+                pixel_values=example.get("rgb_pixel_values"),
+            )
             if len(inputs["input_ids"][0]) >= self.config.max_length:
                 raise ValueError(
                     f"{example['item_id']}: RGB prompt exceeds max_length"

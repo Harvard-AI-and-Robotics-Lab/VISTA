@@ -47,6 +47,7 @@ def main():
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--checkpoint-steps', type=int, default=5)
     parser.add_argument('--workers', type=int, default=0)
+    parser.add_argument('--rgb-cache', help='Verified InternVL FP32 pixel cache; leaves the experiment recipe unchanged')
     parser.add_argument('--smoke-test', action='store_true', help='Three steps per stage, effective batch 1')
     args = parser.parse_args()
     if args.checkpoint_steps < 1 or args.workers < 0:
@@ -106,6 +107,8 @@ def main():
             config.update(max_steps=3, accumulation=1, workers=0)
         cfg = Experiment(**config)
         manifest, _ = verify_prepared(cfg.prepared, [], 0)
+        dataset = make_dataset(cfg.prepared, 'train', cfg, training=True,
+                               pixel_cache=args.rgb_cache)
         resume = None
         if root.exists() and any(root.iterdir()):
             if not args.resume:
@@ -130,6 +133,11 @@ def main():
                         environment=environment_record(), input_mode='rgb',
                         checkpoint_steps=args.checkpoint_steps, workers=args.workers,
                         fixed_final_step=cfg.max_steps, planned_lora_update_steps=cfg.max_steps))
+        if dataset.pixel_cache is not None:
+            atomic_json(root / 'rgb_cache.json', dict(
+                path=str(dataset.pixel_cache.root.resolve()),
+                cache_id=dataset.pixel_cache.manifest['cache_id'],
+                prepared_id=manifest['prepared_id']))
         set_seed(cfg.seed)
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.benchmark = False
@@ -153,7 +161,7 @@ def main():
             dataloader_pin_memory=True, report_to=['tensorboard'])
         trainer = VistaTrainer(
             model=model, args=training_args,
-            train_dataset=make_dataset(cfg.prepared, 'train', cfg, training=True),
+            train_dataset=dataset,
             data_collator=VistaCollator(processor, cfg, training=True),
             processing_class=processor, sensor_lr=cfg.sensor_lr, encoder_lr=cfg.encoder_lr,
             callbacks=[RecoveryCallback()])

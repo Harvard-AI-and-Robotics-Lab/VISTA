@@ -215,7 +215,7 @@ def read_zero_shot_frames(video, indices):
 
 
 class RGBDataset:
-    def __init__(self, root, split, config, training=False, **sensor_options):
+    def __init__(self, root, split, config, training=False, pixel_cache=None, **sensor_options):
         if split not in SPLITS or (training and split != "train"):
             raise ValueError("Only the train split may be used for training")
         if config.input_mode != "rgb" or config.sensor["modalities"]:
@@ -229,6 +229,14 @@ class RGBDataset:
         self.items = read_jsonl(self.root / f"{split}.items.jsonl")
         self.clips = {c["clip_id"]: c for c in read_jsonl(self.root / f"{split}.clips.jsonl")}
         self._verified = set()
+        self.pixel_cache = None
+        if pixel_cache is not None:
+            from .rgb_cache import PixelCache
+            if config.model_id not in (
+                "OpenGVLab/InternVL3-2B-hf", "OpenGVLab/InternVL3-8B-hf"
+            ):
+                raise ValueError("The RGB pixel cache currently supports InternVL3 2B/8B")
+            self.pixel_cache = PixelCache(pixel_cache, self.manifest, split, self.clips)
 
     def __len__(self):
         return len(self.items)
@@ -241,9 +249,13 @@ class RGBDataset:
                 raise ValueError(f"RGB video changed after preparation: {clip['clip_id']}")
             self._verified.add(clip["clip_id"])
         indices = np.asarray(clip["frame_indices"], dtype=np.int64)
-        return dict(item, frames=read_zero_shot_frames(clip["video"], indices),
-                    frame_times=np.asarray(clip["frame_times"], dtype=np.float32),
-                    frame_indices=indices, frame_count=clip["frame_count"])
+        sample = dict(item, frame_times=np.asarray(clip["frame_times"], dtype=np.float32),
+                      frame_indices=indices, frame_count=clip["frame_count"])
+        if self.pixel_cache is None:
+            sample["frames"] = read_zero_shot_frames(clip["video"], indices)
+        else:
+            sample["rgb_pixel_values"] = self.pixel_cache.load(clip["clip_id"])
+        return sample
 
 
 def main():

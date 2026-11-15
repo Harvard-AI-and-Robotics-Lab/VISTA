@@ -112,8 +112,9 @@ python run.py train --input-mode rgb --model internvl3_2b --stage both \
 By default preparation requires `train.csv`, `val.csv`, `test.csv`, and the
 corresponding RGB videos. For a local train/validation copy, add
 `--splits train val`; validation stays separate and cannot be used for training.
-It writes task/clip manifests and checksums, sampling the same eight
-frame indices as multimodal preparation. RGB device timestamps are used when
+It writes task/clip manifests and checksums, sampling the eight zero-shot
+benchmark frame indices (`min(int(i * frame_count / 7), frame_count - 1)`).
+RGB device timestamps are used when
 available; otherwise video-FPS timing is recorded explicitly in the manifest.
 `--allow-trailing-timestamp` permits exactly one extra timestamp after the final
 video frame. Missing videos, unpaired annotations, or overlapping splits fail
@@ -149,6 +150,40 @@ If a smaller microbatch is needed, `--batch-size 1` increases gradient
 accumulation to preserve effective batch size 32. Qwen supports `--gpus 1` or
 `--gpus 2`; InternVL and Gemma use one GPU. Smaller batches do not guarantee that
 the larger models fit a given GPU.
+
+InternVL3 2B/8B can optionally cache the exact eight processed RGB frames per
+clip to avoid decoding and resizing them again for every task and epoch:
+
+```bash
+python -m vista_mm.rgb_cache --prepared data/prepared_rgb \
+  --output data/cache_rgb_internvl --splits train --workers 2
+
+python train_resumable.py --model internvl3_2b --stage both \
+  --prepared data/prepared_rgb --training-root runs/rgb \
+  --rgb-cache data/cache_rgb_internvl --workers 0 --checkpoint-steps 5
+```
+
+The cache contains lossless FP32 `8 x 3 x 448 x 448` tensors, about 9.6 GB for
+497 training clips. Cache preparation uses the existing frame decoder and PIL
+bicubic resize/normalization, verifies a bitwise-equal serialization round trip
+for every clip, and binds the cache to the prepared manifest, video hashes,
+frame indices, preprocessing implementation, and package versions. A requested
+cache that is incomplete, stale, or corrupt raises an error. Cache creation
+does not modify the prepared dataset. Use a new output directory if a build
+fails.
+
+Only the visual tensors are cached. Prompts, reference-answer sampling, task
+order, answer-only loss, optimizer state, seeds, microbatch/accumulation, and
+the 210 + 140 schedule remain unchanged. The cache builder's `--workers` affects
+preparation only; training still uses its original worker setting. The option
+is currently exposed by `train_resumable.py` for InternVL3 2B/8B; other model
+families and uncached training/inference retain their existing behavior.
+
+Add `--resume` to continue a checkpoint with the same source and experiment
+settings, after removing its cooperative `PAUSE_REQUESTED` file. Existing runs
+also enforce source hashes: when applying this code update to a paused run,
+retain the original metadata, verify cached/uncached input parity, and record
+the source transition before resuming. The resume checks remain enabled.
 
 ```bash
 python run.py train --input-mode rgb --model internvl3_2b --stage both \
